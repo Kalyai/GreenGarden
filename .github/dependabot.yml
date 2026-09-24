@@ -1,0 +1,22 @@
+# Автоматические обновления зависимостей (OWASP A06).
+# Срабатывает, когда репозиторий размещён на GitHub.
+version: 2
+updates:
+  # Python-зависимости. Сейчас их нет (см. requirements.txt), но секция
+  # нужна, чтобы первая же добавленная библиотека сразу попала под контроль.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+
+  # GitHub Actions: чужие экшены — это выполнение кода в CI, их тоже обновляют.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"

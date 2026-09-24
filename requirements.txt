@@ -1,0 +1,19 @@
+# «Зелёный дворик» — runtime-зависимостей НЕТ.
+#
+# Бэкенд намеренно написан только на стандартной библиотеке Python:
+# http.server, json, urllib, threading, hmac, ipaddress, logging.
+# Ставить через pip ничего не нужно — это осознанное решение, оно уменьшает
+# поверхность атаки и снимает вопрос устаревших библиотек (OWASP A06).
+#
+# Требования к окружению:
+#   Python >= 3.9   (ipaddress, ThreadingHTTPServer, f-strings)
+#   Проверено на Python 3.14.
+#
+# Если зависимость всё же понадобится — НЕ добавляйте её сюда вручную.
+# Заведите requirements.in и зафиксируйте точные версии вместе с хешами:
+#
+#   pip install pip-tools
+#   pip-compile --generate-hashes --output-file=requirements.txt requirements.in
+#
+# Хеши обязательны: без них подмена пакета на индексе остаётся незамеченной
+# (OWASP A08 — Data Integrity Failures).
