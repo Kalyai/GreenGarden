@@ -1,0 +1,42 @@
+# Контекст сборки. Главное здесь — секреты и персональные данные: они не
+# должны попасть ни в контекст, ни в слой образа (утечка через docker history,
+# регистр или кеш buildx). Публичные файлы перечислены явно в стадии static.
+
+# --- Секреты и ПДн ---------------------------------------------------------
+.env
+.env.*
+backend/bot_token.txt
+backend/admin_token.txt
+backend/admin_chat_ids.txt
+backend/leads.json
+backend/chats.json
+*.json.tmp
+*.pem
+*.key
+
+# --- Служебные каталоги ----------------------------------------------------
+.git
+.github
+.gitignore
+.idea
+.qwen
+.cache
+deploy/backups
+
+# --- Артефакты и локальный мусор -------------------------------------------
+**/__pycache__
+*.py[cod]
+.venv
+venv
+*.log
+.DS_Store
+
+# --- Документы и файлы сборки (в образе не нужны) --------------------------
+SECURITY-AUDIT.md
+DEPLOYMENT.md
+README.md
+Makefile
+Dockerfile
+docker-compose.yml
+requirements.txt
+tools

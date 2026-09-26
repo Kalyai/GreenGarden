@@ -1,0 +1,12 @@
+[Unit]
+Description=Продление сертификата Let's Encrypt и перезагрузка nginx
+Documentation=file:__PROJECT_DIR__/DEPLOYMENT.md
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=/usr/bin/bash __PROJECT_DIR__/deploy/renew-cert.sh
+Nice=5
+NoNewPrivileges=true

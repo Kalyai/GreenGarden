@@ -1,0 +1,11 @@
+[Unit]
+Description=Ежедневная резервная копия заявок
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+# Если сервер был выключен в момент срабатывания — запустить при включении
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

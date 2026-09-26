@@ -327,7 +327,7 @@ def build(products):
 
   {modals}
 
-  <script src="js/main.js?v=16"></script>
+  <script src="js/main.js?v=23"></script>
 </body>
 </html>
 """

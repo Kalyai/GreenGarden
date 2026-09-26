@@ -1,0 +1,31 @@
+# /etc/fail2ban/jail.d/greengarden.local
+# Устанавливается deploy/setup.sh, который подставляет вместо __LOG_DIR__
+# реальный каталог журналов nginx на хосте.
+#
+# Журналы читаются с хоста, а не из контейнера: каталог __LOG_DIR__
+# примонтирован в контейнер nginx (см. docker-compose.yml), поэтому файлы
+# для fail2ban выглядят обычными.
+
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+# Подсеть Docker не баним ни при каких обстоятельствах: оттуда приходит
+# трафик nginx, и его блокировка означала бы полную недоступность сайта.
+ignoreip = 127.0.0.1/8 ::1 172.28.0.0/24
+
+[sshd]
+enabled  = true
+port     = ssh
+maxretry = 3
+bantime  = 3h
+
+# Срабатывает на строки «limiting requests, excess: ...» в error.log,
+# то есть на клиентов, упёршихся в limit_req nginx.
+[nginx-limit-req]
+enabled  = true
+port     = http,https
+logpath  = __LOG_DIR__/error.log
+maxretry = 10
+findtime = 5m
+bantime  = 1h

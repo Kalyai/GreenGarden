@@ -506,9 +506,17 @@ Mozilla/5.0 (YandexBot/3.0)    → 200
 
 ## 4. Конфигурация nginx
 
-Отдельные файлы развёртывания по согласованию не создавались — конфигурация приведена
-здесь. Приложение слушает `127.0.0.1:8000` и не должно быть доступно из интернета
-напрямую.
+Конфигурация ниже — обоснование принятых решений для nginx на хосте. Рабочие
+файлы развёртывания созданы позже и лежат в `deploy/` и `docker-compose.yml`
+(порядок установки — в `DEPLOYMENT.md`): `deploy/nginx/greengarden.conf.template`
+повторяют эту схему с поправками на контейнеры — статика вшита в образ nginx,
+поэтому `root` указывает на `/usr/share/nginx/html`, добавлена отдельная зона
+`limit_req` для `/api/` и `resolver 127.0.0.11` для переживающего пересборку
+адреса контейнера приложения.
+
+Приложение не должно быть доступно из интернета напрямую: по умолчанию оно
+слушает `127.0.0.1:8000`, а в контейнере — `SITE_HOST=0.0.0.0` внутри сети
+Docker, при этом порт 8000 на хост не публикуется вовсе.
 
 ```nginx
 # /etc/nginx/conf.d/green-dvorik.conf
@@ -692,6 +700,25 @@ MIME через `python-magic`, X-Sendfile и имена на uuid не прим
 | `.github/dependabot.yml` | A06: еженедельные обновления pip и GitHub Actions |
 | `SECURITY-AUDIT.md` | этот отчёт |
 
+### Файлы развёртывания (добавлены при подготовке к выкладке на сервер)
+
+| Файл | Назначение |
+|---|---|
+| `DEPLOYMENT.md` | инструкция установки и эксплуатации |
+| `Dockerfile` | три стадии: `static` (публичные файлы), `app` (Python), `nginx`. Секреты и данные в образы не копируются |
+| `.dockerignore` | A08: `.env`, токены, `leads.json`, `chats.json` не попадают в контекст сборки |
+| `docker-compose.yml` | сервисы, тома, фиксированная подсеть, `read_only`, `cap_drop: ALL`, `no-new-privileges`, ротация журналов |
+| `.env.example` | шаблон настроек; сам `.env` в репозиторий не попадает |
+| `deploy/setup.sh` | первичная настройка сервера: Docker, `.env`, ufw, fail2ban, сертификат, таймеры |
+| `deploy/update.sh` | выкатка: `git pull` + пересборка обоих образов (HTML, JS и `app.py` всегда вместе) |
+| `deploy/verify.sh` | автоматическая часть чек-листа раздела 7 |
+| `deploy/backup.sh`, `deploy/restore.sh` | шифрованный gpg снимок тома данных и восстановление |
+| `deploy/renew-cert.sh` | продление сертификата через webroot без простоя |
+| `deploy/nginx/*` | конфигурация nginx из раздела 4 в контейнерном варианте |
+| `deploy/systemd/*`, `deploy/fail2ban/*`, `deploy/logrotate/*` | таймеры бэкапа и продления, джейлы fail2ban, ротация журналов |
+| `Makefile` | короткие команды эксплуатации |
+| `.github/workflows/ci.yml` | A06: сборка образов и дымовые тесты при push/PR |
+
 ### Переменные окружения
 
 | Переменная | По умолчанию | Назначение |
@@ -699,14 +726,16 @@ MIME через `python-magic`, X-Sendfile и имена на uuid не прим
 | `ADMIN_PASSWORD` | *пусто* | **Обязательна.** Пароль входа в ботов. Пусто = вход закрыт |
 | `TELEGRAM_BOT_TOKEN` | файл `bot_token.txt` | Токен бота заявок |
 | `TELEGRAM_ADMIN_TOKEN` | файл `admin_token.txt` | Токен бота админки |
-| `SITE_PORT` | `8000` | Порт (слушает только `127.0.0.1`) |
+| `SITE_PORT` | `8000` | Порт слушателя |
+| `SITE_HOST` | `127.0.0.1` | Интерфейс. В контейнере — `0.0.0.0`: сеть Docker изолирована, а порт 8000 на хост не публикуется |
+| `DATA_DIR` | каталог `backend/` | Где лежат `leads.json`, `chats.json` и файлы токенов. На сервере — том `/data`, то есть данные физически вне web-root (закрывает остаток F-03) |
 | `MAX_BODY_BYTES` | `32768` | Потолок тела запроса |
 | `PUBLIC_LIMIT_PER_MIN` | `60` | Лимит на документы и API |
 | `ASSET_LIMIT_PER_MIN` | `600` | Лимит на статику |
-| `LEAD_LIMIT_PER_HOUR` | `5` | Лимит заявок с IP и с телефона |
+| `LEAD_LIMIT_PER_MIN` | `5` | Лимит заявок в минуту с IP и с телефона |
 | `MAX_CONCURRENCY` | `64` | Потолок одновременных подключений |
 | `PUBLIC_HTTPS` | `0` | `1` — отправлять HSTS (за nginx с TLS) |
-| `TRUSTED_PROXIES` | `127.0.0.1,::1` | IP/CIDR, которым доверяем в `X-Forwarded-For` |
+| `TRUSTED_PROXIES` | `127.0.0.1,::1` | IP/CIDR, которым доверяем в `X-Forwarded-For`. В контейнерах — подсеть compose-сети (`APP_SUBNET`), иначе приложение видит один IP на всех посетителей |
 | `LEAD_ALERT_THRESHOLD` | `100` | Порог алерта о всплеске заявок в час |
 
 Пример unit-файла systemd:
@@ -723,6 +752,15 @@ ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/lib/green-dvorik
 ```
+
+При развёртывании в контейнерах (выбранный вариант) те же гарантии даёт
+`docker-compose.yml`: секреты приходят из `.env` — аналог `EnvironmentFile`,
+в выводе `ps aux` не видны; `no-new-privileges:true`; `read_only: true` —
+аналог `ProtectSystem=strict`; непривилегированный пользователь `gd` (uid 10001)
+вместо `User=www-data`; `cap_drop: ALL` (у nginx добавлены только
+`NET_BIND_SERVICE`, `SETUID`, `SETGID`, `CHOWN`); том `data` — единственный
+путь, доступный на запись, аналог `ReadWritePaths`. Юниты systemd из
+`deploy/systemd/` отвечают только за таймеры бэкапа и продления сертификата.
 
 ---
 

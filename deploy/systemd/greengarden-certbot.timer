@@ -1,0 +1,13 @@
+[Unit]
+Description=Проверка срока сертификата дважды в сутки
+
+[Timer]
+# Два запуска в сутки — рекомендация Let's Encrypt: продление выполняется,
+# когда до истечения меньше 30 дней, а повтор даёт запас на сбой сети.
+OnCalendar=*-*-* 04:30:00
+OnCalendar=*-*-* 16:30:00
+Persistent=true
+RandomizedDelaySec=30m
+
+[Install]
+WantedBy=timers.target

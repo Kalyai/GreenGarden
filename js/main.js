@@ -76,17 +76,30 @@
       body: JSON.stringify(payload),
     });
 
+  /* Проверка на клиенте мягкая и дружелюбная: имя принимаем любое,
+     кроме пустого и слишком длинного, — ровно как и бэкенд. */
+  const nameHint = (value) => {
+    const name = value.trim();
+    if (!name) return "Подскажите, как к вам обращаться — это поле обязательно";
+    if (name.length > 60) return "Имя получилось очень длинным: оставьте, пожалуйста, до 60 символов";
+    return "";
+  };
+
   const validateLeadForm = (form) => {
-    let valid = true;
-    if (!form.elements.name.value.trim()) {
-      form.elements.name.classList.add("is-invalid");
-      valid = false;
+    const name = form.elements.name;
+    const phone = form.elements.phone;
+    const hint = nameHint(name.value);
+    const phoneBad = phone.value.replace(/\D/g, "").length < 11;
+    name.classList.toggle("is-invalid", Boolean(hint));
+    phone.classList.toggle("is-invalid", phoneBad);
+    if (hint) return { valid: false, hint };
+    if (phoneBad) {
+      return {
+        valid: false,
+        hint: "Проверьте номер: нужен формат +7 (999) 123-45-67 — по нему перезвонит агроном",
+      };
     }
-    if (form.elements.phone.value.replace(/\D/g, "").length < 11) {
-      form.elements.phone.classList.add("is-invalid");
-      valid = false;
-    }
-    return valid;
+    return { valid: true, hint: "" };
   };
 
   // Ошибка гаснет, как только пользователь правит поле
@@ -108,7 +121,7 @@
   $$("form").forEach(bindConsent);
   markFormsOpened();   // формы вне модалок доступны с момента загрузки
 
-  /* Отправка одной формы-заявки. Возвращает true при успехе.
+  /* Отправка одной формы-заявки. Возвращает { ok, status }.
      Кнопка на время запроса блокируется и показывает «Отправляем…». */
   const submitLead = async (form, source, extra = {}) => {
     const btn = form.querySelector("[type='submit']");
@@ -128,14 +141,28 @@
         source,
         ...extra,
       });
-      if (!res.ok) throw new Error(res.status);
-      return true;
+      if (!res.ok) return { ok: false, status: res.status };
+      return { ok: true, status: res.status };
     } catch {
-      return false;
+      return { ok: false, status: 0 };
     } finally {
       btn.disabled = false;
       btn.textContent = label;
     }
+  };
+
+  /* Причина отказа объясняется по-человечески и сразу с вариантом решения. */
+  const leadErrorText = (status) => {
+    if (status === 429) {
+      return "Заявок за минуту пришло слишком много. Подождите минуту или позвоните: +7 (925) 881-01-90";
+    }
+    if (status === 400) {
+      return "Не получилось принять данные. Проверьте имя и телефон и попробуйте ещё раз";
+    }
+    if (status === 413) {
+      return "Комментарий получился очень длинным. Сократите, пожалуйста, до 300 символов";
+    }
+    return "Что-то пошло не так на нашей стороне. Попробуйте ещё раз или позвоните: +7 (925) 881-01-90";
   };
 
   /* ---------- 4. Модальные окна ---------- */
@@ -394,28 +421,37 @@
   $("#callbackForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const form = e.target;
-    if (!validateLeadForm(form)) return;
-    const ok = await submitLead(form, "modal", cart.size ? { items: cartItems() } : {});
-    if (ok) {
+    const check = validateLeadForm(form);
+    if (!check.valid) {
+      showToast(check.hint);
+      return;
+    }
+    const res = await submitLead(form, "modal", cart.size ? { items: cartItems() } : {});
+    if (res.ok) {
       form.hidden = true;
       $("#modalSuccess").hidden = false;
     } else {
-      showToast("Не удалось отправить заявку — позвоните нам, пожалуйста");
+      showToast(leadErrorText(res.status));
     }
   });
 
-  /* ---------- 7. Оформление заказа из корзины ---------- */
+  /* ---------- 7. Оформление заказа из корзины ----------
+     Пустая корзина не мешает: заявка уходит без списка товаров. */
   $("#cartOrderForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const form = e.target;
-    if (!validateLeadForm(form) || !cart.size) return;
-    const ok = await submitLead(form, "cart", { items: cartItems() });
-    if (ok) {
+    const check = validateLeadForm(form);
+    if (!check.valid) {
+      showToast(check.hint);
+      return;
+    }
+    const res = await submitLead(form, "cart", { items: cartItems() });
+    if (res.ok) {
       clearCart();
       $("#cartOrderFormWrap").hidden = true;
       $("#cartModalSuccess").hidden = false;
     } else {
-      showToast("Не удалось отправить заказ — позвоните нам, пожалуйста");
+      showToast(leadErrorText(res.status));
     }
   });
 
@@ -426,19 +462,20 @@
   ctaForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     ctaStatus.hidden = true;
-    if (!validateLeadForm(ctaForm)) {
-      ctaStatus.textContent = "Проверьте имя и телефон: нужен формат +7 (___) ___-__-__";
+    const check = validateLeadForm(ctaForm);
+    if (!check.valid) {
+      ctaStatus.textContent = check.hint;
       ctaStatus.classList.remove("is-ok");
       ctaStatus.hidden = false;
       return;
     }
-    const ok = await submitLead(ctaForm, "cta");
-    if (ok) {
+    const res = await submitLead(ctaForm, "cta");
+    if (res.ok) {
       ctaForm.reset();
       ctaStatus.textContent = "Заявка ушла в Telegram — агроном перезвонит в часы работы питомника.";
       ctaStatus.classList.add("is-ok");
     } else {
-      ctaStatus.textContent = "Не удалось отправить заявку. Позвоните: +7 (925) 881-01-90";
+      ctaStatus.textContent = leadErrorText(res.status);
       ctaStatus.classList.remove("is-ok");
     }
     ctaStatus.hidden = false;

@@ -1,0 +1,78 @@
+# Сборка и дымовые проверки. Dependabot следит за версиями экшенов
+# (см. .github/dependabot.yml).
+#
+# Смысл: поймать поломку до выкладки на сервер. Проверяются синтаксис Python,
+# валидность compose-файла, сборка обоих образов, запуск приложения в контейнере
+# (приём заявок, закрытые пути, права на файлы данных) и рендеринг конфига nginx.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Синтаксис Python
+        run: python3 -m py_compile backend/app.py tools/build_catalog.py tools/build_legal_pages.py
+
+      - name: Валидность docker-compose.yml
+        run: ADMIN_PASSWORD=ci DOMAIN=example.test docker compose config --quiet
+
+      - name: Сборка образа приложения
+        run: docker build --target app -t gd/app:ci .
+
+      - name: Сборка образа nginx
+        run: docker build --target nginx -t gd/nginx:ci .
+
+      - name: Конфиг nginx рендерится и проходит nginx -t
+        run: |
+          mkdir -p /tmp/le/live/example.test
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=example.test' \
+            -keyout /tmp/le/live/example.test/privkey.pem \
+            -out /tmp/le/live/example.test/fullchain.pem 2>/dev/null
+          docker run --rm -e DOMAIN=example.test -v /tmp/le:/etc/letsencrypt:ro gd/nginx:ci nginx -t
+          # домен действительно подставился в конфиг, а не остался шаблоном
+          docker run --rm -e DOMAIN=example.test -v /tmp/le:/etc/letsencrypt:ro \
+            --entrypoint sh gd/nginx:ci -c \
+            'sh /docker-entrypoint.d/20-envsubst-on-templates.sh && grep -q "server_name example.test;" /etc/nginx/conf.d/default.conf'
+
+      - name: Дымовой тест приложения в контейнере
+        run: |
+          docker run -d --name gd-app -e ADMIN_PASSWORD=ci -p 127.0.0.1:8000:8000 gd/app:ci
+          for _ in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' gd-app)" = healthy ] && break
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.Health.Status}}' gd-app)" = healthy
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126'
+
+          # Статика отдаётся, служебные пути закрыты
+          curl -fsS -A "$UA" -o /dev/null http://127.0.0.1:8000/
+          test "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" http://127.0.0.1:8000/backend/app.py)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" http://127.0.0.1:8000/img/)" = 404
+
+          # Без согласия заявка не принимается (152-ФЗ)
+          test "$(curl -s -o /dev/null -w '%{http_code}' -A "$UA" -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"name":"CI","phone":"+7 (900) 000-00-00","source":"cta","elapsed_ms":5000,"consent":false}' \
+            http://127.0.0.1:8000/api/lead)" = 400
+
+          # С согласием — принимается и уходит в DATA_DIR
+          curl -fsS -A "$UA" -X POST -H 'Content-Type: application/json' \
+            -d '{"name":"CI","phone":"+7 (900) 000-00-00","source":"cta","elapsed_ms":5000,"consent":true}' \
+            http://127.0.0.1:8000/api/lead | grep -q '"id": 1'
+          docker exec gd-app test -f /data/leads.json
+          # данные вне web-root и с правами 0600 (umask 0077 из Dockerfile)
+          docker exec gd-app sh -c 'test ! -e /app/backend/leads.json'
+          docker exec gd-app sh -c 'test "$(stat -c %a /data/leads.json)" = 600'
+          docker exec gd-app sh -c 'test "$(stat -c %a /data)" = 700'
+
+          docker logs --tail 30 gd-app

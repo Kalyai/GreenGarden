@@ -12,9 +12,10 @@
 игнорируются). «Деактивировать чат» снимает доступ, удаляет историю
 и требует повторного ввода пароля.
 
-Запуск:   python3 backend/app.py
-Порт:     8000 (или SITE_PORT)
-Данные:   backend/leads.json (заявки), backend/chats.json (чаты ботов)
+Запуск:   python3 backend/app.py   (на сервере — docker compose up -d, см. DEPLOYMENT.md)
+Порт:     8000 (или SITE_PORT), интерфейс 127.0.0.1 (или SITE_HOST)
+Данные:   backend/leads.json (заявки), backend/chats.json (чаты ботов);
+          каталог данных можно вынести переменной DATA_DIR
 """
 
 import csv
@@ -25,6 +26,7 @@ import json
 import logging
 import math
 import os
+import queue
 import re
 import threading
 import time
@@ -37,10 +39,19 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # папка сайта
 HERE = os.path.dirname(os.path.abspath(__file__))
-LEADS_FILE = os.path.join(HERE, "leads.json")
-CHATS_FILE = os.path.join(HERE, "chats.json")
-TOKEN_FILE = os.path.join(HERE, "bot_token.txt")
-ADMIN_TOKEN_FILE = os.path.join(HERE, "admin_token.txt")
+# Каталог состояния: заявки, чаты ботов, файлы токенов. По умолчанию — рядом
+# с кодом (локальный запуск). На сервере задаётся DATA_DIR и указывает на том
+# вне образа: иначе данные теряются при каждой пересборке контейнера и лежат
+# в web-root (F-03 аудита).
+DATA_DIR = os.environ.get("DATA_DIR", "").strip() or HERE
+LEADS_FILE = os.path.join(DATA_DIR, "leads.json")
+CHATS_FILE = os.path.join(DATA_DIR, "chats.json")
+TOKEN_FILE = os.path.join(DATA_DIR, "bot_token.txt")
+ADMIN_TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
+# Интерфейс для слушателя. По умолчанию только loopback: наружу приложение
+# смотрит через nginx. В контейнере задают SITE_HOST=0.0.0.0 — сеть контейнера
+# изолирована, а порт 8000 на хост не публикуется (см. docker-compose.yml).
+HOST = os.environ.get("SITE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SITE_PORT", "8000"))
 TG_API = "https://api.telegram.org"
 
@@ -58,10 +69,14 @@ PAGE_SIZE = 5
 MAX_BODY_BYTES = int(os.environ.get("MAX_BODY_BYTES", str(32 * 1024)))
 # Публичные эндпоинты: не более N запросов в минуту с одного IP.
 PUBLIC_LIMIT_PER_MIN = int(os.environ.get("PUBLIC_LIMIT_PER_MIN", "60"))
-# Заявки: не более N в час с одного IP и не более N в час с одного телефона.
-LEAD_LIMIT_PER_HOUR = int(os.environ.get("LEAD_LIMIT_PER_HOUR", "5"))
-# Форма, заполненная быстрее этого времени, почти наверняка бот.
-MIN_FILL_SECONDS = 2.0
+# Заявки: не более N в минуту с одного IP и не более N в минуту с одного телефона.
+LEAD_LIMIT_PER_MIN = int(os.environ.get("LEAD_LIMIT_PER_MIN", "5"))
+# Живой человек с автозаполнением может уложиться в полсекунды,
+# поэтому порог минимальный: отсечь только мгновенные автоматические POST.
+MIN_FILL_SECONDS = float(os.environ.get("MIN_FILL_SECONDS", "0.5"))
+# Сетевой таймаут обычных вызовов Bot API. Чем он короче, тем быстрее бот
+# отвечает при обрывах связи: зависший вызов не держит очередь обновлений.
+TG_TIMEOUT = float(os.environ.get("TG_TIMEOUT", "10"))
 # Предел числа потоков: ThreadingHTTPServer плодит их без ограничения.
 MAX_CONCURRENCY = int(os.environ.get("MAX_CONCURRENCY", "64"))
 # Отдавать HSTS имеет смысл только когда TLS терминируется на nginx.
@@ -117,6 +132,25 @@ def clean_for_log(value, limit=120):
 
 # ---------- хранилище ----------
 
+def ensure_data_dir():
+    """Создать каталог данных и убедиться, что он доступен на запись.
+
+    Проверка нужна на старте, а не в момент первой заявки: без неё свежий
+    том с неверными правами выглядел бы как работающий сайт, а каждая
+    заявка терялась бы на записи leads.json.
+    """
+    probe = os.path.join(DATA_DIR, ".write-probe")
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(probe, "w", encoding="utf-8"):
+            pass
+        os.remove(probe)
+    except OSError as exc:
+        log_security("data_dir_unwritable", path=DATA_DIR, error=exc)
+        print(f"[fatal] каталог данных {DATA_DIR} недоступен для записи: {exc}")
+        raise SystemExit(1)
+
+
 def load_json(path, default):
     try:
         with open(path, encoding="utf-8") as fh:
@@ -163,10 +197,12 @@ def migrate():
                 "blocked": False,
                 "attempts": 0,
                 "sent_ids": [],
+                "transient_ids": [],
                 "registered_at": rec.get("registered_at", ""),
             })
         else:
             rec.setdefault("sent_ids", [])
+            rec.setdefault("transient_ids", [])
             rec.setdefault("state", None)
             fresh.append(rec)
     CHATS[:] = fresh
@@ -203,12 +239,14 @@ def ensure_rec(kind, chat_id):
             "blocked": False,
             "attempts": 0,
             "sent_ids": [],
+            "transient_ids": [],
             "state": None,
             "registered_at": datetime.now().strftime("%d.%m.%Y %H:%M"),
         }
         CHATS.append(rec)
         save_chats()
     rec.setdefault("state", None)
+    rec.setdefault("transient_ids", [])
     return rec
 
 
@@ -227,18 +265,112 @@ class Bot:
             return None
         url = f"{TG_API}/bot{self.token}/{method}"
         data = urllib.parse.urlencode(params, doseq=True).encode()
+        # getUpdates — long-poll: сервер держит соединение до timeout секунд,
+        # поэтому сетевой таймаут ему нужен с запасом, остальным вызовам — нет
+        net_timeout = TG_TIMEOUT + 35 if method == "getUpdates" else TG_TIMEOUT
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=35) as resp:
+            with urllib.request.urlopen(urllib.request.Request(url, data=data),
+                                        timeout=net_timeout) as resp:
                 return json.load(resp)
         except (urllib.error.URLError, OSError, ValueError) as exc:
             print(f"[tg:{self.kind}] {method}: {exc}")
             return None
 
-    def send(self, chat_id, rec=None, **params):
-        """sendMessage; id сообщения запоминаем, чтобы уметь удалять историю."""
+    def send(self, chat_id, rec=None, transient=True, wipe=True, **params):
+        """sendMessage с правилом «в чате видно только актуальное».
+
+        transient — сообщение подлежит автоудалению, когда появится следующее;
+        wipe — перед отправкой убрать прежние временные сообщения чата.
+        Карточки заявок шлются с transient=False: их удаляет только действие
+        пользователя («Обработано» / «Перезвонить позже»).
+        """
+        if rec is not None and wipe:
+            self.clear_transient(rec, chat_id)
         res = self.api("sendMessage", chat_id=chat_id, **params)
         if res and res.get("ok") and rec is not None:
-            rec.setdefault("sent_ids", []).append(res["result"]["message_id"])
+            mid = res["result"]["message_id"]
+            rec.setdefault("sent_ids", []).append(mid)
+            if transient:
+                rec.setdefault("transient_ids", []).append(mid)
+            save_chats()
+        return res
+
+    def clear_transient(self, rec, chat_id):
+        """Удалить временные сообщения чата (прежний список, подсказки)."""
+        ids = rec.setdefault("transient_ids", [])
+        for mid in ids:
+            self.api("deleteMessage", chat_id=chat_id, message_id=mid)
+            if mid in rec.get("sent_ids", []):
+                rec["sent_ids"].remove(mid)
+        rec["transient_ids"] = []
+        save_chats()
+
+    def delete_user_message(self, chat_id, message_id):
+        """Удалить сообщение пользователя после обработки.
+
+        Так в чате не остаются /start, введённые пароли (в том числе
+        неверные) и ответы пошаговых диалогов правки.
+        """
+        if message_id is not None:
+            self.api("deleteMessage", chat_id=chat_id, message_id=message_id)
+
+    def delete_message(self, chat_id, message_id):
+        if message_id:
+            self.api("deleteMessage", chat_id=chat_id, message_id=message_id)
+
+    def send_auth(self, rec, chat_id, attempts_left):
+        """Одно сообщение: приветствие + запрос пароля + остаток попыток.
+
+        При неверном пароле сообщение не дублируется, а правится на месте,
+        чтобы в чате не оставалась история попыток. Если текст не изменился
+        (повторный /start), не дёргаем API вовсе: Telegram ответил бы
+        «message is not modified», а прежняя обработка принимала это за
+        ошибку и пересоздавала сообщение — приветствие мигало по кругу.
+        """
+        text = (WELCOME[self.kind]
+                + f"\n\nВведите пароль администратора.\nПопыток осталось: {attempts_left}")
+        if rec.get("auth_text") == text and rec.get("auth_msg"):
+            return {"ok": True, "result": {"message_id": rec["auth_msg"]}}
+        old = rec.get("auth_msg")
+        if old:
+            res = self.api("editMessageText", chat_id=chat_id,
+                           message_id=old, text=text)
+            if res and res.get("ok"):
+                rec["auth_msg"] = old
+                rec["auth_text"] = text
+                save_chats()
+                return res
+            if "not modified" in str((res or {}).get("description", "")):
+                rec["auth_text"] = text
+                save_chats()
+                return res
+            self.delete_message(chat_id, old)
+            rec["auth_msg"] = None
+        res = self.api("sendMessage", chat_id=chat_id, text=text)
+        if res and res.get("ok"):
+            rec["auth_msg"] = res["result"]["message_id"]
+            rec["auth_text"] = text
+            save_chats()
+        return res
+
+    def send_menu(self, rec, chat_id):
+        """Показать клавиатуру меню.
+
+        Сообщение с клавиатурой обязательно остаётся в чате: если его
+        удалить, кнопки исчезают вместе с ним. Прежний пункт меню
+        заменяется, чтобы не плодить сообщения.
+        """
+        self.clear_transient(rec, chat_id)
+        self.delete_message(chat_id, rec.pop("menu_msg", None))
+        hint = ("Меню: «Заявки для перезвона», «Деактивировать чат»."
+                if self.kind == "leads"
+                else "Меню: «Все заявки», «Все контакты», «Деактивировать чат».")
+        res = self.api("sendMessage", chat_id=chat_id, text=hint,
+                       reply_markup=json.dumps(menu_keyboard(self.kind)))
+        if res and res.get("ok"):
+            mid = res["result"]["message_id"]
+            rec["menu_msg"] = mid
+            rec.setdefault("sent_ids", []).append(mid)
             save_chats()
         return res
 
@@ -248,23 +380,34 @@ class Bot:
             print(f"[bot:{self.kind}] подключён как", me["result"].get("username"))
         else:
             print(f"[bot:{self.kind}] Telegram недоступен: заявки будут копиться и досылаться позже")
+        # Обработка идёт в отдельном потоке: медленные вызовы (удаление
+        # сообщений, рассылка) не задерживают приём следующих обновлений.
+        updates = queue.Queue()
+
+        def worker():
+            while True:
+                update = updates.get()
+                try:
+                    handle_update(self, update)
+                except Exception as exc:  # бот не должен ронять весь процесс
+                    print(f"[bot:{self.kind}] ошибка обработки:", exc)
+                finally:
+                    updates.task_done()
+                if self.kind == "leads":
+                    retry_unpushed()
+
+        threading.Thread(target=worker, daemon=True).start()
         while True:
             res = self.api("getUpdates", offset=self.offset, timeout=30,
                            allowed_updates=json.dumps(["message", "callback_query"]))
             if not res or not res.get("ok"):
-                import time
-                time.sleep(5)
+                time.sleep(2)
                 if self.kind == "leads":
                     retry_unpushed()
                 continue
             for update in res.get("result", []):
                 self.offset = update["update_id"] + 1
-                try:
-                    handle_update(self, update)
-                except Exception as exc:  # бот не должен ронять весь процесс
-                    print(f"[bot:{self.kind}] ошибка обработки:", exc)
-            if self.kind == "leads":
-                retry_unpushed()
+                updates.put(update)
 
 
 LEADS_BOT = Bot("leads", load_token(TOKEN_FILE, "TELEGRAM_BOT_TOKEN"))
@@ -282,7 +425,7 @@ def menu_keyboard(kind):
         return {"keyboard": [[{"text": "Заявки для перезвона"}],
                              [{"text": "Деактивировать чат"}]],
                 "resize_keyboard": True}
-    return {"keyboard": [[{"text": "Все заявки"}, {"text": "Контакты"}],
+    return {"keyboard": [[{"text": "Все заявки"}, {"text": "Все контакты"}],
                          [{"text": "Деактивировать чат"}]],
             "resize_keyboard": True}
 
@@ -466,10 +609,9 @@ def password_step(bot, rec, text, chat_id):
         rec["attempts"] = 0
         rec["state"] = None
         save_chats()
-        bot.send(chat_id, rec, text=WELCOME[bot.kind],
-                 reply_markup=json.dumps(REMOVE_KEYBOARD))
-        bot.send(chat_id, rec,
-                 text=f"Введите пароль администратора. Попыток осталось: {MAX_ATTEMPTS}")
+        # Одно сообщение вместо двух: приветствие + запрос пароля
+        bot.clear_transient(rec, chat_id)
+        bot.send_auth(rec, chat_id, MAX_ATTEMPTS)
         return
 
     # Пароль не задан — вход закрыт для всех. Это защита от запуска
@@ -486,15 +628,17 @@ def password_step(bot, rec, text, chat_id):
         rec["activated"] = True
         rec["attempts"] = 0
         rec["state"] = None
+        # Приветствие остаётся в истории чата: удаляем только при деактивации
         save_chats()
         log_security("bot_login_ok", bot=bot.kind, chat_id=chat_id)
-        bot.send(chat_id, rec, text="Доступ открыт. Меню появилось ниже.",
-                 reply_markup=json.dumps(menu_keyboard(bot.kind)))
+        # Сообщение с клавиатурой остаётся в чате: удалишь его — пропадут кнопки
+        bot.send_menu(rec, chat_id)
+        if bot.kind == "leads":
+            send_today_unprocessed(bot, rec, chat_id)
         return
 
     rec["attempts"] += 1
     left = MAX_ATTEMPTS - rec["attempts"]
-    save_chats()
     # В лог уходит факт попытки, но не сам введённый текст: журнал не должен
     # превращаться в словарь паролей.
     log_security("bot_login_failed", bot=bot.kind, chat_id=chat_id,
@@ -502,14 +646,18 @@ def password_step(bot, rec, text, chat_id):
     if left <= 0:
         rec["blocked"] = True
         rec["activated"] = False
+        rec["transient_ids"] = []
         save_chats()
         log_security("bot_login_blocked", bot=bot.kind, chat_id=chat_id)
+        bot.clear_transient(rec, chat_id)
         bot.api("sendMessage", chat_id=chat_id,
                 text="Пять неверных попыток. Чат заблокирован: бот больше не принимает "
                      "сообщения из этого чата.")
     else:
-        bot.api("sendMessage", chat_id=chat_id,
-                text=f"Неверный пароль. Попыток осталось: {left}")
+        # То же объединённое сообщение, но с обновлённым остатком попыток:
+        # история подбора в чате не копится
+        save_chats()
+        bot.send_auth(rec, chat_id, left)
 
 
 def deactivate(bot, rec, chat_id):
@@ -520,6 +668,9 @@ def deactivate(bot, rec, chat_id):
     for mid in rec.get("sent_ids", []):
         bot.api("deleteMessage", chat_id=chat_id, message_id=mid)
     rec["sent_ids"] = []
+    rec["transient_ids"] = []
+    rec.pop("auth_msg", None)
+    rec.pop("menu_msg", None)
     with LOCK:
         for lead in LEADS:
             lead["messages"] = [m for m in lead.get("messages", [])
@@ -548,9 +699,30 @@ def lead_action(bot, rec, lead_id, action, message_id):
         rec["sent_ids"].remove(message_id)
         save_chats()
     bot.api("deleteMessage", chat_id=rec["chat_id"], message_id=message_id)
-    bot.api("sendMessage", chat_id=rec["chat_id"],
-            text="Заявка отмечена обработанной." if action == "done"
-            else "Заявка перенесена в список «Заявки для перезвона».")
+    # Подтверждение действия не убирает остальные карточки заявок
+    bot.send(rec["chat_id"], rec, transient=True, wipe=False,
+             text="Заявка отмечена обработанной." if action == "done"
+             else "Заявка перенесена в список «Заявки для перезвона».")
+
+
+def send_today_unprocessed(bot, rec, chat_id):
+    """После входа в боте заявок показываем необработанные за сегодня."""
+    today = datetime.now().strftime("%d.%m.%Y")
+    with LOCK:
+        items = [l for l in LEADS
+                 if l["status"] == "new" and l["ts"].startswith(today)]
+    if not items:
+        bot.send(chat_id, rec, transient=True, wipe=False,
+                 text="Сегодня необработанных заявок нет.")
+        return
+    bot.send(chat_id, rec, transient=True, wipe=False,
+             text=f"<b>Заявки за сегодня, необработанные: {len(items)}</b>",
+             parse_mode="HTML")
+    for lead in items:
+        # Карточки заявок постоянные: их убирают только кнопки действий
+        bot.send(chat_id, rec, transient=False, wipe=False,
+                 text=lead_text(lead), parse_mode="HTML",
+                 reply_markup=json.dumps(lead_inline(lead["id"])))
 
 
 def send_callback_list(bot, rec, chat_id):
@@ -563,6 +735,7 @@ def send_callback_list(bot, rec, chat_id):
              parse_mode="HTML")
     for lead in items:
         bot.send(chat_id, rec, text=lead_text(lead), parse_mode="HTML",
+                 transient=True, wipe=False,
                  reply_markup=json.dumps(lead_inline(lead["id"])))
 
 
@@ -623,7 +796,7 @@ def send_contacts_page(bot, rec, chat_id, page):
     if not chunk:
         bot.send(chat_id, rec, text="Контактов пока нет.")
         return
-    lines = [f"<b>Контакты, страница {page + 1} из {pages}</b>"]
+    lines = [f"<b>Все контакты, страница {page + 1} из {pages}</b>"]
     rows = []
     for group in chunk:
         key = digits_of(group["phone"])
@@ -853,7 +1026,7 @@ def export_csv(bot, chat_id):
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=35) as resp:
+        with urllib.request.urlopen(req, timeout=TG_TIMEOUT + 10) as resp:
             res = json.load(resp)
         if not res.get("ok"):
             raise ValueError(res)
@@ -882,12 +1055,23 @@ def handle_update(bot, update):
     if not text or chat_id is None:
         return
     rec = ensure_rec(bot.kind, chat_id)
+    # Сообщение пользователя обрабатываем и сразу удаляем: команды, пароль
+    # и ответы диалогов не должны оставаться в истории чата.
+    bot.delete_user_message(chat_id, message.get("message_id"))
     if rec["blocked"]:
         return  # чат заблокирован: сообщения игнорируются
     if rec.get("state"):
         return handle_state(bot, rec, text, chat_id)
     if not rec["activated"]:
         return password_step(bot, rec, text, chat_id)
+
+    # /start и /menu возвращают клавиатуру: без этого в уже активированном
+    # чате кнопок не вернуть (например, если меню было потеряно)
+    if text in ("/start", "/menu"):
+        bot.send_menu(rec, chat_id)
+        if bot.kind == "leads" and text == "/start":
+            send_today_unprocessed(bot, rec, chat_id)
+        return
 
     if bot.kind == "leads":
         if text == "Заявки для перезвона":
@@ -906,7 +1090,7 @@ def handle_update(bot, update):
     # бот админки
     if text == "Все заявки":
         send_leads_page(bot, rec, chat_id, 0)
-    elif text == "Контакты":
+    elif text == "Все контакты":
         send_contacts_page(bot, rec, chat_id, 0)
     elif text == "Деактивировать чат":
         deactivate(bot, rec, chat_id)
@@ -916,7 +1100,7 @@ def handle_update(bot, update):
         export_csv(bot, chat_id)
     else:
         bot.send(chat_id, rec,
-                 text="Используйте кнопки меню: «Все заявки», «Контакты» или «Деактивировать чат».")
+                 text="Используйте кнопки меню: «Все заявки», «Все контакты» или «Деактивировать чат».")
 
 
 def handle_callback(bot, cb):
@@ -933,8 +1117,7 @@ def handle_callback(bot, cb):
     if data == "confirm:no":
         return apply_confirm(bot, rec, chat_id, False)
     if data == "menu":
-        return bot.send(chat_id, rec, text="Меню:",
-                        reply_markup=json.dumps(menu_keyboard(bot.kind)))
+        return bot.send_menu(rec, chat_id)
 
     match = re.fullmatch(r"lead:(\d+):(done|callback)", data)
     if match:
@@ -984,7 +1167,7 @@ ASSET_LIMIT_PER_MIN = int(os.environ.get("ASSET_LIMIT_PER_MIN", "600"))
 LIMITS = {
     "public": (PUBLIC_LIMIT_PER_MIN, 60),
     "asset": (ASSET_LIMIT_PER_MIN, 60),
-    "lead": (LEAD_LIMIT_PER_HOUR, 3600),
+    "lead": (LEAD_LIMIT_PER_MIN, 60),
 }
 
 ASSET_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif",
@@ -1006,16 +1189,12 @@ TRUSTED_PROXIES = tuple(
     if p.strip()
 )
 
-# Имя: буквы (в т.ч. кириллица), пробел, дефис, апостроф, точка.
-# Явно без \s — иначе перевод строки прошёл бы в имя и сломал журнал.
-NAME_RE = re.compile(r"^[^\W\d_]+(?:[ '’.\-]+[^\W\d_]+)*\.?$")
 # Телефон в формате маски сайта: +7 (925) 881-01-90.
 PHONE_RU_RE = re.compile(r"^\+7\s?\(\d{3}\)\s?\d{3}-\d{2}-\d{2}$")
 # Запасной вариант: только телефонные символы и 10–15 цифр.
 PHONE_CHARS_RE = re.compile(r"^\+?[\d ()\-]{9,20}$")
 # Управляющие символы: ломают журнал и обрезают строки в читающих программах.
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
-VOWELS = "аеёиоуыэюяaeiouy"
 SOURCES = ("cta", "modal", "cart")
 
 # Заголовки отправляются на каждый ответ: статика, JSON и страницы ошибок
@@ -1099,37 +1278,14 @@ def sanitize_text(value, limit):
     return " ".join(text.split())[:limit]
 
 
-# Ряды клавиатурных раскладок: имя, целиком совпадающее с куском ряда, —
-# это автоматический ввод («asdfgh», «йцукен»), а не имя клиента.
-KEYBOARD_ROWS = ("qwertyuiop", "asdfghjkl", "zxcvbnm",
-                 "йцукенгшщзхъ", "фывапролджэячсмитьбю")
-# Порог в 5 символов защищает реальные короткие фамилии: например, «Смит»
-# входит в ряд «…чсмитьбю», но состоит из четырёх букв и отклонён не будет.
-KEYBOARD_JUNK_MIN_LEN = 5
-
-
-def is_keyboard_junk(name):
-    """True, если имя — кусок ряда клавиатуры."""
-    compact = re.sub(r"[^a-zа-яё]", "", str(name).lower())
-    if len(compact) < KEYBOARD_JUNK_MIN_LEN:
-        return False
-    return any(compact in row for row in KEYBOARD_ROWS)
-
-
 def valid_name(name):
-    """Имя: осмысленный набор букв, а не «asdfgh».
+    """Имя принимаем любое, кроме пустого и слишком длинного.
 
-    Три независимые проверки: допустимые символы, минимум две разные буквы,
-    хотя бы одна гласная и отсутствие совпадения с рядом клавиатуры.
+    Словари «осмысленности» здесь только мешали живым людям: «Ромашка 24»,
+    «ИП Смит», «B2B», «А.» — нормальные способы представиться. Безопасность
+    обеспечивает sanitize_text (управляющие символы, длина), а не эвристики.
     """
-    if not 2 <= len(name) <= 60 or not NAME_RE.match(name):
-        return False
-    letters = {ch for ch in name.lower() if ch.isalpha()}
-    if len(letters) < 2:
-        return False
-    if not any(ch in VOWELS for ch in name.lower()):
-        return False
-    return not is_keyboard_junk(name)
+    return 1 <= len(name) <= 60
 
 
 def valid_phone(phone):
@@ -1391,7 +1547,8 @@ class Handler(SimpleHTTPRequestHandler):
         if not valid_phone(phone):
             log_security("rejected_phone", ip=ip)
             return self.json(400, {"ok": False, "error": "validation"})
-        if source not in SOURCES or items is None or (source == "cart" and not items):
+        # Пустая корзина — не ошибка: заявка без состава тоже заявка
+        if source not in SOURCES or items is None:
             log_security("rejected_payload", ip=ip, source=clean_for_log(source, 20))
             return self.json(400, {"ok": False, "error": "validation"})
 
@@ -1454,6 +1611,7 @@ def main():
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+    ensure_data_dir()
     if not PASSWORD:
         log_security("admin_password_missing")
         print("[warn] ADMIN_PASSWORD не задан: вход в ботов закрыт для всех")
@@ -1463,8 +1621,8 @@ def main():
             threading.Thread(target=bot.loop, daemon=True).start()
         else:
             print(f"[bot:{bot.kind}] токен не найден, бот не запущен")
-    server = BoundedServer(("127.0.0.1", PORT), Handler)
-    print(f"[http] сайт на http://127.0.0.1:{PORT}")
+    server = BoundedServer((HOST, PORT), Handler)
+    print(f"[http] сайт на http://{HOST}:{PORT}, данные в {DATA_DIR}")
     server.serve_forever()
 
 

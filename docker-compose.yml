@@ -1,0 +1,158 @@
+# «Зелёный дворик» — Docker Compose для одного сервера.
+#
+#   app    — Python-процесс (заявки + два Telegram-бота). Порт наружу НЕ
+#            публикуется: единственный вход — nginx.
+#   nginx  — TLS, статика, лимиты запросов, проксирование /api/ в app.
+#   certbot— выпуск и продление сертификата Let's Encrypt. Запускается только
+#            по требованию (deploy/setup.sh, deploy/renew-cert.sh), поэтому
+#            вынесен в профиль tools и не стартует вместе с `up -d`.
+#
+# Значения переменных берутся из .env в этом же каталоге (см. .env.example).
+# Команды: docker compose up -d --build / logs -f / down (или make up|logs|down)
+
+name: greengarden
+
+# Журналы контейнеров обязаны ротироваться: docker по умолчанию пишет их без
+# ограничения размера, и за месяц журнал безопасности съедает диск.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+
+  app:
+    build:
+      context: .
+      target: app
+    image: greengarden/app:local
+    restart: unless-stopped
+    # Реплика строго одна (никаких `docker compose up --scale app=2`):
+    # смещение getUpdates хранится в памяти процесса, и второй экземпляр
+    # начал бы обрабатывать те же обновления Telegram дважды.
+    environment:
+      # Секреты. Пустой ADMIN_PASSWORD означает «вход в ботов закрыт для всех»,
+      # поэтому переменная обязательна — иначе сайт будет работать, а заявки
+      # в Telegram не попадут, и это обнаружится не сразу.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?задайте ADMIN_PASSWORD в .env}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ADMIN_TOKEN: ${TELEGRAM_ADMIN_TOKEN:-}
+      # Сеть. 0.0.0.0 — только внутри сети контейнера, порт не публикуется.
+      # TRUSTED_PROXIES обязан совпадать с подсетью compose: иначе приложение
+      # не поверит X-Forwarded-For от nginx и будет видеть один IP на всех
+      # посетителей, а лимиты заявок начнут срабатывать сразу на весь сайт.
+      SITE_HOST: 0.0.0.0
+      SITE_PORT: "8000"
+      DATA_DIR: /data
+      PUBLIC_HTTPS: "1"
+      TRUSTED_PROXIES: ${APP_SUBNET:-172.28.0.0/24}
+      TZ: ${TZ:-Europe/Moscow}
+      # Лимиты защиты. Значения по умолчанию совпадают с backend/app.py и
+      # подобраны в SECURITY-AUDIT.md; менять их нужно парой с лимитами nginx
+      # (deploy/nginx/greengarden.conf.template), иначе защита станет формальной.
+      MAX_BODY_BYTES: ${MAX_BODY_BYTES:-32768}
+      PUBLIC_LIMIT_PER_MIN: ${PUBLIC_LIMIT_PER_MIN:-60}
+      ASSET_LIMIT_PER_MIN: ${ASSET_LIMIT_PER_MIN:-600}
+      LEAD_LIMIT_PER_MIN: ${LEAD_LIMIT_PER_MIN:-5}
+      MIN_FILL_SECONDS: ${MIN_FILL_SECONDS:-0.5}
+      MAX_CONCURRENCY: ${MAX_CONCURRENCY:-64}
+      TG_TIMEOUT: ${TG_TIMEOUT:-10}
+      LEAD_ALERT_THRESHOLD: ${LEAD_ALERT_THRESHOLD:-100}
+    volumes:
+      # Заявки и состояния чатов. Том именованный, а не bind-mount: данные
+      # переживают пересборку образа и не лежат в каталоге репозитория.
+      - data:/data
+    networks:
+      - net
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  nginx:
+    build:
+      context: .
+      target: nginx
+    image: greengarden/nginx:local
+    restart: unless-stopped
+    # service_started, а не service_healthy: если приложение не поднялось,
+    # сайт всё равно должен отдавать страницы, а /api/ вернёт 502.
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      # Подставляется envsubst'ом официального образа в
+      # /etc/nginx/templates/default.conf.template -> /etc/nginx/conf.d/default.conf
+      DOMAIN: ${DOMAIN:?задайте DOMAIN в .env}
+      TZ: ${TZ:-Europe/Moscow}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-www:/var/www/certbot:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      # Журналы nginx на хосте: их читают fail2ban (deploy/fail2ban) и
+      # logrotate (deploy/logrotate). Каталог создаёт deploy/setup.sh;
+      # монтирование поверх /var/log/nginx убирает симлинки образа в
+      # /dev/stdout, поэтому error.log дополнительно дублируется в stderr
+      # (см. шаблон nginx) и остаётся виден в `docker compose logs nginx`.
+      - ${LOG_DIR:-/var/log/greengarden/nginx}:/var/log/nginx
+    networks:
+      - net
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      # entrypoint образа рендерит шаблон домена в /etc/nginx/conf.d/default.conf
+      # уже при старте контейнера, поэтому каталог обязан быть на запись.
+      # Заодно tmpfs скрывает стоковый default.conf из образа.
+      - /etc/nginx/conf.d
+    cap_drop:
+      - ALL
+    # Минимальный набор для nginx: мастер-процесс стартует root'ом, поэтому
+    # ему нужны привязка портов 80/443 и сброс привилегий воркеров до
+    # пользователя nginx. Всё остальное сброшено строкой выше.
+    cap_add:
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  certbot:
+    image: certbot/certbot:latest
+    # Плавающий тег здесь осознанный: certbot должен поддерживать актуальные
+    # требования Let's Encrypt (профили сертификатов, изменения ACME).
+    profiles:
+      - tools
+    restart: "no"
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    networks:
+      - net
+    logging: *logging
+
+volumes:
+  data:
+  certbot-www:
+  certbot-etc:
+
+networks:
+  net:
+    driver: bridge
+    # Фиксированная подсеть нужна, чтобы TRUSTED_PROXIES приложения был
+    # предсказуемым. Смените значение в .env, если подсеть занята другой
+    # сетью Docker на этом хосте (проверка: ip route | grep 172.28).
+    ipam:
+      config:
+        - subnet: ${APP_SUBNET:-172.28.0.0/24}

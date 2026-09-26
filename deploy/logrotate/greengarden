@@ -1,0 +1,18 @@
+# /etc/logrotate.d/greengarden — журналы nginx, лежащие на хосте.
+# Устанавливается deploy/setup.sh, который подставляет вместо __LOG_DIR__
+# реальный каталог (значение LOG_DIR из .env).
+#
+# copytruncate вместо create + сигнала nginx: процесс работает в контейнере,
+# и посылать ему USR1 пришлось бы через docker exec. Обрезка копии стоит
+# нескольких строк журнала на границе ротации — для сайта это приемлемо.
+
+__LOG_DIR__/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su root root
+}

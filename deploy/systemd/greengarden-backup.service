@@ -1,0 +1,17 @@
+[Unit]
+Description=Резервная копия заявок «Зелёного дворика» (шифрованная)
+Documentation=file:__PROJECT_DIR__/DEPLOYMENT.md
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=/usr/bin/bash __PROJECT_DIR__/deploy/backup.sh
+# Бэкап не должен конкурировать за диск с сайтом
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Секреты не должны попадать в журнал: скрипт читает парольную фразу из файла
+NoNewPrivileges=true
+PrivateTmp=true
