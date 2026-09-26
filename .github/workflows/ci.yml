@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Синтаксис Python
         run: python3 -m py_compile backend/app.py tools/build_catalog.py tools/build_legal_pages.py
