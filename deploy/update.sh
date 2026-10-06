@@ -43,8 +43,8 @@ if [ "$PULL" = 1 ]; then
 fi
 
 log "Проверяю синтаксис Python перед сборкой"
-python3 -m py_compile backend/app.py tools/*.py 2>/dev/null \
-    || die "backend/app.py не компилируется — выкатка остановлена"
+python3 -m py_compile backend/*.py tools/*.py 2>/dev/null \
+    || die "Python-код не компилируется — выкатка остановлена"
 
 log "Собираю образы (--pull: свежие базовые образы закрывают A06)"
 "${COMPOSE[@]}" build --pull

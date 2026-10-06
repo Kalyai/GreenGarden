@@ -48,7 +48,7 @@ gzip_vary       on;
 gzip_proxied    any;
 gzip_comp_level 5;
 gzip_min_length 1024;
-gzip_types      text/css application/javascript application/json image/svg+xml text/plain;
+gzip_types      text/css application/javascript application/json image/svg+xml text/plain application/xml text/xml;
 
 # ---------- порт 80: домен ----------
 server {
@@ -173,6 +173,30 @@ server {
         proxy_read_timeout 30s;
     }
 
+    # Каталог и админка получают актуальные данные из одного процесса.
+    # ^~ для загруженных фото обязателен: иначе regex статики вернёт 404.
+    location = /admin {
+        limit_req zone=api burst=10 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location ^~ /admin/ {
+        limit_req zone=api burst=10 nodelay;
+        client_max_body_size 6m;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location ^~ /catalog-media/ {
+        limit_req zone=assets burst=200 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location ^~ /catalog/ {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location ^~ /collections/ {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+
     # Главная страница — отдельной локацией. Это обязательно: try_files
     # отрабатывает в фазе precontent, то есть РАНЬШЕ модуля index (фаза
     # content), поэтому при «try_files $uri ...» запрос к «/» искал бы файл
@@ -182,6 +206,36 @@ server {
         include   /etc/nginx/snippets/security-headers.conf;
         add_header Cache-Control "no-cache" always;
         try_files /index.html =404;
+    }
+
+    location = /catalog {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+
+    location = /catalog.html { return 301 /catalog$is_args$args; }
+    location = /catalog/ { return 301 /catalog$is_args$args; }
+    location = /offer.html { return 301 /offer$is_args$args; }
+    location = /services.html { return 301 /services$is_args$args; }
+    location = /additional-services.html { return 301 /additional-services$is_args$args; }
+    location = /contacts.html { return 301 /contacts$is_args$args; }
+    location = /delivery.html { return 301 /delivery$is_args$args; }
+    location = /guides.html { return 301 /guides$is_args$args; }
+    location = /privacy-policy.html { return 301 /privacy-policy$is_args$args; }
+    location = /index.html { return 301 /$is_args$args; }
+    location ~ ^/(catalog|collections|guides)/([a-z0-9-]+)\.html$ { return 301 /$1/$2$is_args$args; }
+    location ~ ^/(catalog|collections|guides)/([a-z0-9-]+)/$ { return 301 /$1/$2$is_args$args; }
+    location ~ ^/(services|additional-services|contacts|delivery|guides|offer|privacy-policy)/$ { return 301 /$1$is_args$args; }
+
+    location = /robots.txt {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        try_files /robots.txt =404;
+    }
+    location = /sitemap.xml {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+        try_files /sitemap.xml =404;
     }
 
     # Остальные страницы сайта. ЧПУ /offer и /privacy-policy закрывает

@@ -517,6 +517,20 @@
   /* ---------- 11. Фильтры каталога ---------- */
   const filterChips = $$(".catalog__filters .chip");
   const productCards = $$(".catalog__grid .card");
+  const productWord = (count) => {
+    if (count % 10 === 1 && count % 100 !== 11) return "товар";
+    if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return "товара";
+    return "товаров";
+  };
+  const layoutSubgroups = () => {
+    $$(".catalog__group:not([hidden])").forEach((group) => {
+      const columns = getComputedStyle(group).gridTemplateColumns.trim().split(/\s+/).length;
+      $$(".catalog__subgroup:not([hidden])", group).forEach((subgroup) => {
+        const visible = $$(".card:not(.is-hidden)", subgroup).length;
+        subgroup.style.gridColumn = visible >= columns ? "1 / -1" : `span ${visible}`;
+      });
+    });
+  };
 
   filterChips.forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -528,12 +542,28 @@
         const tags = (card.dataset.tags || "").split(/\s+/);
         card.classList.toggle("is-hidden", filter !== "all" && !tags.includes(filter));
       });
+      $$(".catalog__subgroup").forEach((subgroup) => {
+        const visible = $$(".card:not(.is-hidden)", subgroup).length;
+        subgroup.hidden = visible === 0;
+        subgroup.classList.toggle("catalog__subgroup--single", visible === 1);
+        const count = $(".catalog__subgroup-count", subgroup);
+        if (count) count.textContent = String(visible);
+      });
+      $$(".catalog__group").forEach((group) => {
+        const visible = $$(".card:not(.is-hidden)", group).length;
+        group.hidden = visible === 0;
+        const count = $(".catalog__group-count", group);
+        if (count) count.textContent = `${visible} ${productWord(visible)}`;
+      });
+      layoutSubgroups();
     });
   });
 
   // catalog.html#conifer и т.п.: фильтр включается по хэшу в адресе
   const presetChip = filterChips.find((c) => c.dataset.filter === location.hash.slice(1));
   if (presetChip) presetChip.click();
+  else layoutSubgroups();
+  if (filterChips.length) window.addEventListener("resize", layoutSubgroups, { passive: true });
 
   /* ---------- 12. Появление блоков при скролле ---------- */
   const revealEls = $$(".reveal");

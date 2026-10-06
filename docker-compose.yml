@@ -1,6 +1,6 @@
 # «Зелёный дворик» — Docker Compose для одного сервера.
 #
-#   app    — Python-процесс (заявки + два Telegram-бота). Порт наружу НЕ
+#   app    — Python-процесс (каталог, админка, заявки и один Telegram-бот). Порт наружу НЕ
 #            публикуется: единственный вход — nginx.
 #   nginx  — TLS, статика, лимиты запросов, проксирование /api/ в app.
 #   certbot— выпуск и продление сертификата Let's Encrypt. Запускается только
@@ -32,12 +32,10 @@ services:
     # смещение getUpdates хранится в памяти процесса, и второй экземпляр
     # начал бы обрабатывать те же обновления Telegram дважды.
     environment:
-      # Секреты. Пустой ADMIN_PASSWORD означает «вход в ботов закрыт для всех»,
-      # поэтому переменная обязательна — иначе сайт будет работать, а заявки
-      # в Telegram не попадут, и это обнаружится не сразу.
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?задайте ADMIN_PASSWORD в .env}
+      # Раздельные секреты: веб-админка и бот заявок.
+      SITE_ADMIN_PASSWORD: ${SITE_ADMIN_PASSWORD:?задайте SITE_ADMIN_PASSWORD в .env}
+      TELEGRAM_ADMIN_PASSWORD: ${TELEGRAM_ADMIN_PASSWORD:?задайте TELEGRAM_ADMIN_PASSWORD в .env}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_ADMIN_TOKEN: ${TELEGRAM_ADMIN_TOKEN:-}
       # Сеть. 0.0.0.0 — только внутри сети контейнера, порт не публикуется.
       # TRUSTED_PROXIES обязан совпадать с подсетью compose: иначе приложение
       # не поверит X-Forwarded-For от nginx и будет видеть один IP на всех

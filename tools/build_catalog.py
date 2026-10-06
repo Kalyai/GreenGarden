@@ -336,6 +336,8 @@ def build(products):
 
 
 if __name__ == "__main__":
-    all_products = collect()
-    count = build(all_products)
-    print(f"catalog.html собран: товаров с фото {count} из {len(all_products)}")
+    # The complete sitemap snapshot supersedes the old four-category cache.
+    # Keep the historical parser above for reference, but never overwrite the
+    # migrated 315-product catalog with its partial 62-product output.
+    from render_legacy_catalog import main
+    main()

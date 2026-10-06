@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=30">
+  <link rel="stylesheet" href="css/style.css?v=39">
 </head>
 <body>
 
@@ -69,7 +69,7 @@
 
   <header class="header" id="header">
     <div class="container header__inner">
-      <a class="logo" href="#top" aria-label="Зелёный дворик — на главную">
+      <a class="logo" href="/" aria-label="Зелёный дворик — на главную">
         <img class="logo__img" src="img/logo.png" alt="" width="42" height="42">
         <span class="logo__text">
           Зелёный дворик
@@ -78,10 +78,10 @@
       </a>
 
       <nav class="nav" id="nav" aria-label="Основная навигация">
-        <a class="nav__link" href="#catalog">Каталог</a>
-        <a class="nav__link" href="#services">Услуги</a>
-        <a class="nav__link" href="#about">О нас</a>
-        <a class="nav__link" href="#contacts">Контакты</a>
+        <a class="nav__link" href="/catalog">Каталог</a>
+        <a class="nav__link" href="/services">Услуги</a>
+        <a class="nav__link" href="/#about">О нас</a>
+        <a class="nav__link" href="/contacts">Контакты</a>
       </nav>
 
       <div class="header__actions">
@@ -175,10 +175,13 @@
         <nav class="footer__col" aria-label="Каталог">
           <h3 class="footer__title">Каталог</h3>
           <ul>
-            <li><a href="catalog.html#conifer">Хвойные деревья</a></li>
-            <li><a href="catalog.html#fruit">Плодовые деревья</a></li>
-            <li><a href="catalog.html#decor">Декоративные кустарники</a></li>
-            <li><a href="catalog.html#krupnomer">Крупномеры</a></li>
+            <li><a href="/catalog#fruit">Плодовые деревья</a></li>
+            <li><a href="/catalog#berry">Ягодные и орехоплодные</a></li>
+            <li><a href="/catalog#conifer">Хвойные растения</a></li>
+            <li><a href="/catalog#decor-tree">Декоративные деревья</a></li>
+            <li><a href="/catalog#decor">Декоративные кустарники</a></li>
+            <li><a href="/catalog#vine">Лианы</a></li>
+            <li><a href="/catalog#krupnomer">Крупномеры</a></li>
           </ul>
         </nav>
 
@@ -298,6 +301,6 @@
   <!-- Тост-уведомления -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/main.js?v=23"></script>
+  <script src="js/main.js?v=27"></script>
 </body>
 </html>

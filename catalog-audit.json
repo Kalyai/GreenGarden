@@ -1,0 +1,1312 @@
+{
+  "old_sitemap_products": 315,
+  "parsed_products": 315,
+  "existing_cards": 62,
+  "missing_products_count": 253,
+  "missing_products": [
+    {
+      "name": "Абрикос Чемпион Севера",
+      "sku": "gd-304760",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-chempion-severa/"
+    },
+    {
+      "name": "Абрикос Черный Принц",
+      "sku": "gd-304759",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-chernyy-prints/"
+    },
+    {
+      "name": "Абрикос Краснощекий",
+      "sku": "gd-300955",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-krasnoschekiy/"
+    },
+    {
+      "name": "Абрикос Мичуринский",
+      "sku": "gd-304761",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-michurinskiy/"
+    },
+    {
+      "name": "Абрикос Погремок",
+      "sku": "gd-300952",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-pogremok/"
+    },
+    {
+      "name": "Абрикос Ульянихинский",
+      "sku": "gd-300953",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/abrikos-ulyanihinskiy/"
+    },
+    {
+      "name": "Алыча \" Феерия\"",
+      "sku": "gd-304833",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/alycha-feeriya/"
+    },
+    {
+      "name": "Алыча Кубанская комета",
+      "sku": "gd-300958",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/alycha-kubanskaya-kometa/"
+    },
+    {
+      "name": "Алыча Ленинградская Желтая",
+      "sku": "gd-304968",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/alycha-leningradskaya-zheltaya/"
+    },
+    {
+      "name": "Алыча \" Оцарк\"",
+      "sku": "gd-304834",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/alycha-otsark/"
+    },
+    {
+      "name": "Алыча Персиковая",
+      "sku": "gd-302179",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/alycha-persikovaya/"
+    },
+    {
+      "name": "Арония на штамбе",
+      "sku": "gd-304786",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/aroniya-na-shtambe/"
+    },
+    {
+      "name": "Бересклет ( штамб ) Эмиральд Голд",
+      "sku": "gd-304882",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/beresklet-shtamb-emirald-gold/"
+    },
+    {
+      "name": "Береза повислая Юнги",
+      "sku": "gd-304777",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/bereza-povislaya-yungi/"
+    },
+    {
+      "name": "Боярышник обыкновенный Пауль Скарлет",
+      "sku": "gd-304962",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/boyaryshnik-obyknovennyy-paul-skarlet/"
+    },
+    {
+      "name": "Боярышник Тоба",
+      "sku": "gd-304963",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/boyaryshnik-toba/"
+    },
+    {
+      "name": "Брусника Коралл",
+      "sku": "gd-301141",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/brusnika-sort-korall/"
+    },
+    {
+      "name": "Черешня черная Ленинградская",
+      "sku": "gd-304124",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-chernaya-leningradskaya/"
+    },
+    {
+      "name": "Черешня \"Дерево-сад\" Мичуринка+Юлия+Дрогана Желтая",
+      "sku": "gd-304772",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-derevo-sad-michurinka-olenka-drogana-zheltaya/"
+    },
+    {
+      "name": "Черешня Фатеж",
+      "sku": "gd-301039",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-fatezh/"
+    },
+    {
+      "name": "Черешня Ипуть",
+      "sku": "gd-301042",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-iput/"
+    },
+    {
+      "name": "Черешня Мулатка",
+      "sku": "gd-304768",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-mulatka/"
+    },
+    {
+      "name": "Черешня \" Ревна\"",
+      "sku": "gd-304812",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-revna/"
+    },
+    {
+      "name": "Черешня Рондо",
+      "sku": "gd-304770",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-rondo/"
+    },
+    {
+      "name": "Черешня Россошанская Золотая",
+      "sku": "gd-304769",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-rossoshanskaya-zolotaya/"
+    },
+    {
+      "name": "Черешня \" Валерий Чкалов\"",
+      "sku": "gd-304813",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-valeriy-chkalov/"
+    },
+    {
+      "name": "Черешня желтая Дрогана",
+      "sku": "gd-304123",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chereshnya-zheltaya-drogana/"
+    },
+    {
+      "name": "Черевишня (дюк) Саратовская Малышка",
+      "sku": "gd-304574",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/cherevishnya-dyuk-saratovskaya-malyshka/"
+    },
+    {
+      "name": "Черевишня Факел",
+      "sku": "gd-302246",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/cherevishnya-fakel/"
+    },
+    {
+      "name": "Черная смородина Селеченская 2",
+      "sku": "gd-303750",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chernaya-smorodina-selechenskaya/"
+    },
+    {
+      "name": "Черешня Брянская Розовая",
+      "sku": "gd-301040",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/chrbrr/"
+    },
+    {
+      "name": "Дерево-сад \" Чижовская + Лада + Детская \"",
+      "sku": "gd-304934",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/derevo-sad-chizhovskaya-lada-detskaya-/"
+    },
+    {
+      "name": "Дерево - сад \" Мелба + Грушовка Московская + Белый Налив \"",
+      "sku": "gd-304936",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/derevo-sad-melba-grushovka-moskovskaya-belyy-naliv-/"
+    },
+    {
+      "name": "Дерево-сад \" Осенняя Яковлева + Просто Мария + Кармен \"",
+      "sku": "gd-304935",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/derevo-sad-osennyaya-yakovleva-prosto-mariya-karmen-/"
+    },
+    {
+      "name": "Дискус",
+      "sku": "gd-304741",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/diskus/"
+    },
+    {
+      "name": "Ель Брунек",
+      "sku": "gd-304734",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/el-brunek/"
+    },
+    {
+      "name": "Ель Фастигиата",
+      "sku": "gd-304718",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/el-fastigiata-/"
+    },
+    {
+      "name": "Ель Кейбаб",
+      "sku": "gd-304959",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/el-keybab/"
+    },
+    {
+      "name": "Ель колючая Супер Блю Сидлинг",
+      "sku": "gd-304960",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/el-kolyuchaya-super-blyu-sidling/"
+    },
+    {
+      "name": "Ель Коника",
+      "sku": "gd-304923",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/el-konika/"
+    },
+    {
+      "name": "Голубика Аврора",
+      "sku": "gd-304762",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-avrora/"
+    },
+    {
+      "name": "Голубика \" Блюголд\" Новинка",
+      "sku": "gd-304817",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-blyugold-novinka/"
+    },
+    {
+      "name": "Голубика Блюкроп",
+      "sku": "gd-300974",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-blyukrop/"
+    },
+    {
+      "name": "Голубика (Бонус)",
+      "sku": "gd-302945",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-bonus/"
+    },
+    {
+      "name": "Голубика \" Джерси\"",
+      "sku": "gd-304818",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-dzhersi/"
+    },
+    {
+      "name": "Голубика Патриот",
+      "sku": "gd-300976",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-patriot/"
+    },
+    {
+      "name": "Голубика Пури",
+      "sku": "gd-304835",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-puri/"
+    },
+    {
+      "name": "Голубика ранняя Спартан",
+      "sku": "gd-304076",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-rannyaya-spartan/"
+    },
+    {
+      "name": "Голубика Шантеклер",
+      "sku": "gd-304885",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/golubika-shantekler/"
+    },
+    {
+      "name": "Гортензия древовидная Анабель Hydrangea arborescens “Annabelle”",
+      "sku": "gd-302920",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-drevovidnaya-anabel-gortenziya-drevovidnaya-annabel-hydrangea-arborescens-annabelle/"
+    },
+    {
+      "name": "Гортензия ( древовидная ) Eco Pink Puff",
+      "sku": "gd-304919",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-drevovidnaya-eco-pink-puff/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Colorful Cocktail",
+      "sku": "gd-304921",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-colorful-cocktail/"
+    },
+    {
+      "name": "Гортензия метельчатая \" Эрли Сенсейшн\"",
+      "sku": "gd-304778",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-erli-senseyshn/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Фрайз Мельба",
+      "sku": "gd-304881",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-frayz-melba/"
+    },
+    {
+      "name": "Гортензия метельчатая Кендилайт",
+      "sku": "gd-304837",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-kendilayt/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Конфетти",
+      "sku": "gd-304880",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-konfeti/"
+    },
+    {
+      "name": "Гортензия метельчатая Лаймлайт",
+      "sku": "gd-302918",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-laymlayt/"
+    },
+    {
+      "name": "Гортензия метельчатая Литл Лайм",
+      "sku": "gd-304540",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-litl-laym/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Metallica",
+      "sku": "gd-304920",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-metallica/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Пинк Даймонд",
+      "sku": "gd-304883",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-pink-daymont/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Пинки Промис",
+      "sku": "gd-304879",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-pinki-promis/"
+    },
+    {
+      "name": "Гортензия метельчатая \" Пинки Винки\"",
+      "sku": "gd-304780",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-pinki-vinki/"
+    },
+    {
+      "name": "Гортензия ( метельчатая ) Роял Флауэр",
+      "sku": "gd-304877",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-royal-flauers/"
+    },
+    {
+      "name": "Гортензия метельчатая \" Сандей Фрайз\"",
+      "sku": "gd-304779",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/gortenziya-metelchataya-sandey-frayz/"
+    },
+    {
+      "name": "Груша Аллегро",
+      "sku": "gd-302124",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-allegro/"
+    },
+    {
+      "name": "Груша Августовская Роса",
+      "sku": "gd-303018",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-avgustovskaya-rosa/"
+    },
+    {
+      "name": "Груша Белорусская Поздняя",
+      "sku": "gd-302133",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-belorusskaya-pozdnyaya/"
+    },
+    {
+      "name": "Груша Чижовская",
+      "sku": "gd-300978",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-chizhovskaya/"
+    },
+    {
+      "name": "Груша Десертная Россошанская",
+      "sku": "gd-302111",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-desertnaya/"
+    },
+    {
+      "name": "Груша \" Детская \"",
+      "sku": "gd-304932",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-detskaya-/"
+    },
+    {
+      "name": "Груша Дюшес (Вильямс)",
+      "sku": "gd-300991",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-dyushes-vilyams/"
+    },
+    {
+      "name": "Груша Елена",
+      "sku": "gd-303012",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-elena/"
+    },
+    {
+      "name": "Груша Феерия",
+      "sku": "gd-302137",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-feeriya/"
+    },
+    {
+      "name": "Груша Кокинская",
+      "sku": "gd-304900",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-kokinskaya/"
+    },
+    {
+      "name": "Груша Красавица Черненко",
+      "sku": "gd-302127",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-krasavitsa-chernenko/"
+    },
+    {
+      "name": "Груша Лада",
+      "sku": "gd-300979",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-lada/"
+    },
+    {
+      "name": "Груша Любимица Яковлева",
+      "sku": "gd-300983",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-lyubimica-yakovleva/"
+    },
+    {
+      "name": "Груша Любимица Мичурина",
+      "sku": "gd-302130",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-lyubimitsa-michurina/"
+    },
+    {
+      "name": "Груша Мраморная",
+      "sku": "gd-300987",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-mramornaya/"
+    },
+    {
+      "name": "Груша Осенняя Яковлева",
+      "sku": "gd-300985",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-osennyaya-yakovleva/"
+    },
+    {
+      "name": "Груша Память Яковлева",
+      "sku": "gd-300986",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-pamyat-yakovleva/"
+    },
+    {
+      "name": "Груша Прибалтийская Маслянистая",
+      "sku": "gd-304899",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-pribaltiyskaya-maslyanistaya/"
+    },
+    {
+      "name": "Груша \" Просто Мария \"",
+      "sku": "gd-304933",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-prosto-mariya-/"
+    },
+    {
+      "name": "Груша \" Русская Красавица\"",
+      "sku": "gd-304803",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-russkaya-krasavitsa/"
+    },
+    {
+      "name": "Груша \" Светлянка\"",
+      "sku": "gd-304802",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-svetlyanka/"
+    },
+    {
+      "name": "Груша Яковлевская",
+      "sku": "gd-302142",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/grusha-yakovlevskaya/"
+    },
+    {
+      "name": "Ива \" Хакуро Нишики\" ( штамб)",
+      "sku": "gd-304829",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/iva-khakuro-nishiki/"
+    },
+    {
+      "name": "Ива козья \" Килмарнок\" ( штамб)",
+      "sku": "gd-304831",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/iva-kozya-shtamb/"
+    },
+    {
+      "name": "Ива плетеная",
+      "sku": "gd-304971",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/iva-pletenaya/"
+    },
+    {
+      "name": "Каштан конский обыкновенный",
+      "sku": "gd-304443",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kashtan-konskiy-obyknovennyy/"
+    },
+    {
+      "name": "Каштан конский",
+      "sku": "gd-304446",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kashtan-konsky/"
+    },
+    {
+      "name": "Клен Гинала",
+      "sku": "gd-304965",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/klen-ginala/"
+    },
+    {
+      "name": "Клен Карнавал",
+      "sku": "gd-304972",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/klen-karnaval/"
+    },
+    {
+      "name": "Клен остролистный \" Роял Ред \" ( штамб )",
+      "sku": "gd-304969",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/klen-ostrolistnyy-royal-red-shtamb-/"
+    },
+    {
+      "name": "Крыжовник Черномор",
+      "sku": "gd-301005",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-chernomor/"
+    },
+    {
+      "name": "крыжовник Гроссуляр",
+      "sku": "gd-304955",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-grossulyar/"
+    },
+    {
+      "name": "Крыжовник Грушенька",
+      "sku": "gd-304908",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-grushenka/"
+    },
+    {
+      "name": "Крыжовник Колобок",
+      "sku": "gd-301006",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-kolobok/"
+    },
+    {
+      "name": "Крыжовник \" Командор\"",
+      "sku": "gd-304827",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-komandor/"
+    },
+    {
+      "name": "Крыжовник Уральский Бесшипный",
+      "sku": "gd-304961",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-uralskiy-besshipnyy/"
+    },
+    {
+      "name": "крыжовник Юбилейный",
+      "sku": "gd-304954",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-yubileynyy/"
+    },
+    {
+      "name": "крыжовник Юбиляр",
+      "sku": "gd-304956",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/kryzhovnik-yubilyar/"
+    },
+    {
+      "name": "Лещина обыкновенная",
+      "sku": "gd-304938",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/leshchina-obyknovennaya/"
+    },
+    {
+      "name": "Лиственница европейская Пендула, штамб",
+      "sku": "gd-304381",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/listvennitsa-evropeyskaya-pendula-shtamb/"
+    },
+    {
+      "name": "Малина крупноплодная Гигант Московский",
+      "sku": "gd-304358",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-krupnoplodnaya-gigant-moskovskiy/"
+    },
+    {
+      "name": "Малина обыкновенная Бальзам",
+      "sku": "gd-302248",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-obyknovennaya-balzam/"
+    },
+    {
+      "name": "Малина обыкновенная Гусар",
+      "sku": "gd-302250",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-obyknovennaya-gusar/"
+    },
+    {
+      "name": "Малина обыкновенная Награда",
+      "sku": "gd-302254",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-obyknovennaya-nagrada/"
+    },
+    {
+      "name": "Малина обыкновенная Скромница",
+      "sku": "gd-302256",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-obyknovennaya-skromnica/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Абрикосовая",
+      "sku": "gd-304890",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-abrikosovaya/"
+    },
+    {
+      "name": "Малина ремонтантная Бриллиант",
+      "sku": "gd-304352",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-brilliant/"
+    },
+    {
+      "name": "Малина ремонтантная Брянское Диво",
+      "sku": "gd-302270",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-bryanskoe-divo/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Евразия",
+      "sku": "gd-304893",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-evraziya/"
+    },
+    {
+      "name": "Малина ремонтантная Геракл",
+      "sku": "gd-302265",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-gerakl/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Крепыш",
+      "sku": "gd-304892",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-krepysh/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Полана",
+      "sku": "gd-304894",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-polana/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Самородок",
+      "sku": "gd-304895",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-samorodok/"
+    },
+    {
+      "name": "Малина ремонтантная Сказка",
+      "sku": "gd-302262",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-skazka/"
+    },
+    {
+      "name": "Малина ( ремонтантная ) Зева Хербстернт",
+      "sku": "gd-304891",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-remontantnaya-zeva-kherbsternt/"
+    },
+    {
+      "name": "Малина сладкая Карамелька",
+      "sku": "gd-304363",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/malina-sladkaya-karamelka/"
+    },
+    {
+      "name": "Миндаль Снега Уимуры",
+      "sku": "gd-304967",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/mindal-snega-uimury/"
+    },
+    {
+      "name": "Можжевельник чешуйчатый Тропикал Блю",
+      "sku": "gd-304888",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/mozhzhevelnik-cheshuychatyy-tropikal-blyu/"
+    },
+    {
+      "name": "Можжевельник Лемон Карпет ( штамб )",
+      "sku": "gd-304750",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/mozhzhevelnik-lemon-karpet/"
+    },
+    {
+      "name": "Можжевельник \" Мэтхот\"",
+      "sku": "gd-304800",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/mozhzhevelnik-metkhot/"
+    },
+    {
+      "name": "Можжевельник Тропикал Блю ( штамб )",
+      "sku": "gd-304751",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/mozhzhevelnik-tropikal-blyu/"
+    },
+    {
+      "name": "Облепиха Алтайская",
+      "sku": "gd-303837",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/oblepikha-altayskaya/"
+    },
+    {
+      "name": "Пихта \" Альпин Стар\"",
+      "sku": "gd-304737",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/pikhta-alrina-star/"
+    },
+    {
+      "name": "Рододендрон Бриджит",
+      "sku": "gd-304884",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-bridzhit/"
+    },
+    {
+      "name": "Рододендрон Элси Стревер",
+      "sku": "gd-304906",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-elsi-strever/"
+    },
+    {
+      "name": "Рододендрон Грандифлорум",
+      "sku": "gd-304863",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-grandiflorum/"
+    },
+    {
+      "name": "Рододендрон Космополитен",
+      "sku": "gd-304905",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-kosmopoliten/"
+    },
+    {
+      "name": "Рододендрон Нова Зембла",
+      "sku": "gd-304904",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-nova-zembla/"
+    },
+    {
+      "name": "Рододендрон Распутин",
+      "sku": "gd-304860",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-rasputin/"
+    },
+    {
+      "name": "Рододендрон Владислав Ягелло",
+      "sku": "gd-304859",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/rododendron-vladislav-yagello/"
+    },
+    {
+      "name": "Рябина",
+      "sku": "gd-302381",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina/"
+    },
+    {
+      "name": "Рябина Бусинка",
+      "sku": "gd-303794",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-businka/"
+    },
+    {
+      "name": "Рябина Десертная Мичурина",
+      "sku": "gd-303789",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-desertnaya-michurina/"
+    },
+    {
+      "name": "Рябина Додонг",
+      "sku": "gd-304964",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-dodong/"
+    },
+    {
+      "name": "Рябина (Ликерная)",
+      "sku": "gd-302965",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-likernaya/"
+    },
+    {
+      "name": "Рябина обыкновенная Сказочная",
+      "sku": "gd-303790",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-obyknovennaya-skazochnaya/"
+    },
+    {
+      "name": "Рябина садовая Десертная",
+      "sku": "gd-303773",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-sadovaya-desertnaya/"
+    },
+    {
+      "name": "Рябина садовая Гранатная",
+      "sku": "gd-303774",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-sadovaya-granatnaya/"
+    },
+    {
+      "name": "Рябина садовая Невежинская",
+      "sku": "gd-303772",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-sadovaya-nevezhinskaya/"
+    },
+    {
+      "name": "Рябина садовая Титан",
+      "sku": "gd-303776",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-sadovaya-titan/"
+    },
+    {
+      "name": "Рябина Сорбинка",
+      "sku": "gd-303005",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/ryabina-sorbinka/"
+    },
+    {
+      "name": "Бузина",
+      "sku": "gd-301142",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sajbuz/"
+    },
+    {
+      "name": "Актинидия",
+      "sku": "gd-301139",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sazhency-aktinidii/"
+    },
+    {
+      "name": "Шарафуга Вельвет Санрайз",
+      "sku": "gd-304839",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sharafuga-velvet-sanrayz/"
+    },
+    {
+      "name": "Шелковица Моджо Берри",
+      "sku": "gd-302360",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/shelkovica/"
+    },
+    {
+      "name": "Шелковица белая Радость",
+      "sku": "gd-303637",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/shelkovitsa-belaya-radost/"
+    },
+    {
+      "name": "Сирень на штамбе \" Огни Донбасса\"",
+      "sku": "gd-304788",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-na-shtambe-ogni-donbassa/"
+    },
+    {
+      "name": "Сирень на штамбе \" Примроуз\"",
+      "sku": "gd-304789",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-na-shtambe-primrouz/"
+    },
+    {
+      "name": "Сирень на штамбе \" Сенсация\"",
+      "sku": "gd-304790",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-na-shtambe-sensatsiya/"
+    },
+    {
+      "name": "Сирень Нина",
+      "sku": "gd-304910",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-nina/"
+    },
+    {
+      "name": "Сирень Палибин",
+      "sku": "gd-304840",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-palibin/"
+    },
+    {
+      "name": "Сирень Павлинка",
+      "sku": "gd-304909",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-pavlinka/"
+    },
+    {
+      "name": "Сирень Примроуз",
+      "sku": "gd-304939",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-primrouz/"
+    },
+    {
+      "name": "Сирень Севастопальский Вальс",
+      "sku": "gd-304912",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-sevastopalskiy-vals/"
+    },
+    {
+      "name": "Сирень венгерская",
+      "sku": "gd-303804",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-vengerskaya/"
+    },
+    {
+      "name": "Сирень Виолетта",
+      "sku": "gd-304911",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/siren-violetta/"
+    },
+    {
+      "name": "Слива \" Бербанк Гигант \"",
+      "sku": "gd-304931",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-berbank-gigant-/"
+    },
+    {
+      "name": "Слива \" Богатырская\"",
+      "sku": "gd-304808",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-bogatyrskaya/"
+    },
+    {
+      "name": "Слива Этюд",
+      "sku": "gd-301023",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-ehtyud/"
+    },
+    {
+      "name": "Слива Евразия 21",
+      "sku": "gd-301021",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-evraziya-21/"
+    },
+    {
+      "name": "Слива Конфетная",
+      "sku": "gd-301024",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-konfetnaya/"
+    },
+    {
+      "name": "Слива Крупная Желтая",
+      "sku": "gd-302738",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-krupnaya-zheltaya/"
+    },
+    {
+      "name": "Слива \" Орловский Сувенир\"",
+      "sku": "gd-304806",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-orlovskiy-suvenir/"
+    },
+    {
+      "name": "Слива Ренклод Розовый",
+      "sku": "gd-302167",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-renklod-rozovyy/"
+    },
+    {
+      "name": "Слива Светлячок",
+      "sku": "gd-302737",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-svetlyachok/"
+    },
+    {
+      "name": "Слива \" Венгерка Московская\"",
+      "sku": "gd-304809",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-vengerka-moskovskaya/"
+    },
+    {
+      "name": "Слива \"Яичная Желтая\"",
+      "sku": "gd-304807",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-yaichnaya-zheltaya/"
+    },
+    {
+      "name": "Слива Заречная ранняя",
+      "sku": "gd-301020",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sliva-zarechnaya-rannyaya/"
+    },
+    {
+      "name": "Смородина белая Версальская",
+      "sku": "gd-301002",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-belaya-versalskaya/"
+    },
+    {
+      "name": "Смородина черная Багира",
+      "sku": "gd-302196",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-bagira/"
+    },
+    {
+      "name": "Смородина черная Белорусская Сладкая",
+      "sku": "gd-302186",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-belorusskaya-sladkaya/"
+    },
+    {
+      "name": "Смородина черная Селеченская",
+      "sku": "gd-302192",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-selechenskaya/"
+    },
+    {
+      "name": "Смородина черная Селечинская",
+      "sku": "gd-303741",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-selechinskaya/"
+    },
+    {
+      "name": "Смородина ( черная ) Татьянин День",
+      "sku": "gd-304953",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-tatyanin-den/"
+    },
+    {
+      "name": "Смородина черная Зеленая Дымка",
+      "sku": "gd-302190",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-zelenaya-dymka/"
+    },
+    {
+      "name": "Смородина черная Зуша",
+      "sku": "gd-302202",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chernaya-zusha/"
+    },
+    {
+      "name": "Смородина чёрная Геркулес",
+      "sku": "gd-301032",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chyornaya-gulliver/"
+    },
+    {
+      "name": "Смородина чёрная Орловский Вальс",
+      "sku": "gd-301033",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chyornaya-orlovskiy-vals/"
+    },
+    {
+      "name": "Смородина чёрная Перун",
+      "sku": "gd-301037",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-chyornaya-perun/"
+    },
+    {
+      "name": "смородина Голландская",
+      "sku": "gd-304958",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-gollandskaya/"
+    },
+    {
+      "name": "смородина Гранатная",
+      "sku": "gd-304957",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-granatnaya/"
+    },
+    {
+      "name": "Смородина красная Натали",
+      "sku": "gd-300998",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-krasnaya-natali/"
+    },
+    {
+      "name": "Смородина красная Рондом",
+      "sku": "gd-304896",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-krasnaya-rondom/"
+    },
+    {
+      "name": "Смородина ( желтая ) Императорская",
+      "sku": "gd-304966",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/smorodina-zheltaya-imperatorskaya/"
+    },
+    {
+      "name": "Сосна горная Джезек ( штамб )",
+      "sku": "gd-304887",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sosna-gornaya-dzhezek-shtamb-/"
+    },
+    {
+      "name": "Сосна (горная ) Мугус",
+      "sku": "gd-304937",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sosna-gornaya-mugus/"
+    },
+    {
+      "name": "Сосна Карстен",
+      "sku": "gd-304727",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sosna-karsten/"
+    },
+    {
+      "name": "Сосна Нана Балканика Аурея",
+      "sku": "gd-304747",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/sosna-nana-balkanika-aureya/"
+    },
+    {
+      "name": "Тис средний Хикси",
+      "sku": "gd-304926",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/tis-sredniy-khiksi/"
+    },
+    {
+      "name": "Туя Даника",
+      "sku": "gd-304922",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/tuya-danika/"
+    },
+    {
+      "name": "Черешня Розовый Жемчуг",
+      "sku": "gd-302157",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vinograd-rozovyy-zhemchug/"
+    },
+    {
+      "name": "Вишня Чёрная крупноплодная",
+      "sku": "gd-300966",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-chyornaya-krupnoplodnaya/"
+    },
+    {
+      "name": "Вишня Десертная Морозовой",
+      "sku": "gd-300970",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-desertnaya-morozovoy/"
+    },
+    {
+      "name": "Вишня (дюк) Саратовская Малышка",
+      "sku": "gd-304775",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-dyuk-saratovskaya-malyshka/"
+    },
+    {
+      "name": "Вишня Харитоновская",
+      "sku": "gd-300965",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-haritonovskaya/"
+    },
+    {
+      "name": "Вишня Лебедянская",
+      "sku": "gd-300960",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-lyubskaya/"
+    },
+    {
+      "name": "Вишня Молодёжная",
+      "sku": "gd-300963",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-molodyozhnaya/"
+    },
+    {
+      "name": "Вишня ( дюк ) Прима",
+      "sku": "gd-304774",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-prima/"
+    },
+    {
+      "name": "Вишня Шоколадница",
+      "sku": "gd-300968",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-shokoladnica/"
+    },
+    {
+      "name": "Вишня Тургеневская",
+      "sku": "gd-300961",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-turgenevskaya/"
+    },
+    {
+      "name": "Вишня Жуковская",
+      "sku": "gd-300962",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/vishnya-zhukovskaya/"
+    },
+    {
+      "name": "Яблоня Китайка Золотая Ранняя",
+      "sku": "gd-303099",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yabkzr/"
+    },
+    {
+      "name": "Яблоня Бельфлер Китайка",
+      "sku": "gd-303124",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-belfler-kitayka/"
+    },
+    {
+      "name": "Яблоня Белый налив (Папировка)",
+      "sku": "gd-303087",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-belyy-naliv-papirovka/"
+    },
+    {
+      "name": "Яблоня Беркутовское",
+      "sku": "gd-303125",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-berkutovskoe%202/"
+    },
+    {
+      "name": "Яблоня \" Бессемянка Мичуринская\"",
+      "sku": "gd-304795",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-bessemyanka-michurinskaya/"
+    },
+    {
+      "name": "Яблоня Богатырь",
+      "sku": "gd-303098",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-bogatyr/"
+    },
+    {
+      "name": "Яблоня \"Дерево-сад\" Антоновка+Орлинка",
+      "sku": "gd-304766",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-derevo-sad-antonovka-orlinka/"
+    },
+    {
+      "name": "Яблоня \"Дерево-сад\" Медуница+ Апорт",
+      "sku": "gd-304767",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-derevo-sad-medunitsa-aport/"
+    },
+    {
+      "name": "Яблоня \" Дерево-сад\" Мелба+ Конфетное",
+      "sku": "gd-304764",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-derevo-sad-melba-konfetnoe/"
+    },
+    {
+      "name": "Яблоня \" Дерево-сад\" Орлинка+Конфетное",
+      "sku": "gd-304763",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-derevo-sad-orlinka-konfetnoe/"
+    },
+    {
+      "name": "Яблоня \"Дерево-сад\" Орловим+Конфетное",
+      "sku": "gd-304765",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-derevo-sad-orlovim-konfetnoe/"
+    },
+    {
+      "name": "Яблоня Грушовка московская",
+      "sku": "gd-303089",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-grushovka-moskovskaya/"
+    },
+    {
+      "name": "яблоня Китайка Долго",
+      "sku": "gd-304952",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-kitayka-dolgo/"
+    },
+    {
+      "name": "Яблоня Лобо",
+      "sku": "gd-303094",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-lobo/"
+    },
+    {
+      "name": "Яблоня Мантет",
+      "sku": "gd-303088",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-mantet/"
+    },
+    {
+      "name": "Яблоня Медуница",
+      "sku": "gd-303086",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-medunica/"
+    },
+    {
+      "name": "Яблоня Мелба",
+      "sku": "gd-303090",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-melba/"
+    },
+    {
+      "name": "Яблоня Мелба Красная ( Мелба Ред )",
+      "sku": "gd-304918",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-melba-krasnaya-melba-red-/"
+    },
+    {
+      "name": "яблоня Недзвецкого",
+      "sku": "gd-304949",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-nedzvetskogo/"
+    },
+    {
+      "name": "Яблоня \" Ола\"",
+      "sku": "gd-304816",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-ola/"
+    },
+    {
+      "name": "Яблоня\" Пепин Шафранный",
+      "sku": "gd-304796",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-pepin-shafrannyy/"
+    },
+    {
+      "name": "Яблоня \" Ред Фри\"",
+      "sku": "gd-304793",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-red-fri/"
+    },
+    {
+      "name": "яблоня Ред Сентинел",
+      "sku": "gd-304951",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-red-sentinel/"
+    },
+    {
+      "name": "Яблоня Роялти",
+      "sku": "gd-304758",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-royalti/"
+    },
+    {
+      "name": "Яблоня Рождественское зимнее",
+      "sku": "gd-303119",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-rozhdestvenskoe-zimnee/"
+    },
+    {
+      "name": "Яблоня Розовый Налив",
+      "sku": "gd-304925",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-rozovyy-naliv/"
+    },
+    {
+      "name": "яблоня Рудольф",
+      "sku": "gd-304950",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-rudolf/"
+    },
+    {
+      "name": "Яблоня Аркад Сахарный",
+      "sku": "gd-304917",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-sakharnyy-arkad/"
+    },
+    {
+      "name": "Яблоня \" Славянка\"",
+      "sku": "gd-304794",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-slavyanka/"
+    },
+    {
+      "name": "Яблоня Спартан",
+      "sku": "gd-303092",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-spartan/"
+    },
+    {
+      "name": "Яблоня Свежесть",
+      "sku": "gd-303112",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-svezhest/"
+    },
+    {
+      "name": "Яблоня \" Уральское Наливное\"",
+      "sku": "gd-304792",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-uralskoe-nalivnoe/"
+    },
+    {
+      "name": "Яблоня Успенское",
+      "sku": "gd-303116",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-uspenskoe/"
+    },
+    {
+      "name": "Яблоня Вишнёвое",
+      "sku": "gd-303091",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-vishnyovoe/"
+    },
+    {
+      "name": "Яблоня Жигулёвское",
+      "sku": "gd-303093",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yablonya-zhigulyovskoe/"
+    },
+    {
+      "name": "Яблоня Мартовское",
+      "sku": "gd-303095",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yabmar/"
+    },
+    {
+      "name": "Яблоня Орловское полосатое",
+      "sku": "gd-303097",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yaborp/"
+    },
+    {
+      "name": "Яблоня Синап Северный",
+      "sku": "gd-303096",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yabsis/"
+    },
+    {
+      "name": "Яблоня Веньяминовское",
+      "sku": "gd-303103",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yabven/"
+    },
+    {
+      "name": "Яблоня Уэлси",
+      "sku": "gd-303101",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/yabyel/"
+    },
+    {
+      "name": "Жасмин Вирджинал",
+      "sku": "gd-304970",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhasmin-virdzhinal/"
+    },
+    {
+      "name": "Жимолость Карина ( 3 года )",
+      "sku": "gd-304928",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-karina-3-goda-/"
+    },
+    {
+      "name": "Жимолость\" Лазурная\"",
+      "sku": "gd-304805",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-lazurnaya/"
+    },
+    {
+      "name": "Жимолость Морена ( 3 года )",
+      "sku": "gd-304927",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-morena-3-goda-/"
+    },
+    {
+      "name": "Жимолость съедобная Лакомка",
+      "sku": "gd-300993",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-sedobnaya-lakomka/"
+    },
+    {
+      "name": "Жимолость Славянка ( 4 года )",
+      "sku": "gd-304930",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-slavyanka-4-goda-/"
+    },
+    {
+      "name": "Жимолость Варшава ( 3 года )",
+      "sku": "gd-304929",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-varshava-3-goda-/"
+    },
+    {
+      "name": "Жимолость \" Золушка\"",
+      "sku": "gd-304804",
+      "source_url": "https://www.green-dvorik.ru/catalog/seedling/zhimolost-zolushka/"
+    }
+  ],
+  "group_counts": {
+    "fruit": 141,
+    "berry": 85,
+    "decor": 40,
+    "decor-tree": 19,
+    "conifer": 29,
+    "vine": 1
+  },
+  "large_specimens": 56,
+  "fetch_errors": {},
+  "image_fallbacks": [],
+  "source_missing_description": [
+    "https://www.green-dvorik.ru/catalog/seedling/alycha-leningradskaya-zheltaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/iva-pletenaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-ginala/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-karnaval/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-ostrolistnyy-royal-red-shtamb-/",
+    "https://www.green-dvorik.ru/catalog/seedling/mindal-snega-uimury/",
+    "https://www.green-dvorik.ru/catalog/seedling/ryabina-dodong/",
+    "https://www.green-dvorik.ru/catalog/seedling/smorodina-zheltaya-imperatorskaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/tuya/",
+    "https://www.green-dvorik.ru/catalog/seedling/zhasmin-virdzhinal/"
+  ],
+  "source_missing_price": [
+    "https://www.green-dvorik.ru/catalog/seedling/kashtan-konskiy-obyknovennyy/",
+    "https://www.green-dvorik.ru/catalog/seedling/smorodina-chyornaya-gulliver/"
+  ],
+  "source_missing_availability": [
+    "https://www.green-dvorik.ru/catalog/seedling/alycha-leningradskaya-zheltaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/iva-pletenaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-ginala/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-karnaval/",
+    "https://www.green-dvorik.ru/catalog/seedling/klen-ostrolistnyy-royal-red-shtamb-/",
+    "https://www.green-dvorik.ru/catalog/seedling/mindal-snega-uimury/",
+    "https://www.green-dvorik.ru/catalog/seedling/ryabina-dodong/",
+    "https://www.green-dvorik.ru/catalog/seedling/smorodina-zheltaya-imperatorskaya/",
+    "https://www.green-dvorik.ru/catalog/seedling/tuya/",
+    "https://www.green-dvorik.ru/catalog/seedling/zhasmin-virdzhinal/"
+  ]
+}

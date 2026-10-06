@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /backend/
+Disallow: /tools/
+Disallow: /deploy/
+Disallow: /.
+
+Sitemap: https://green-courtyard.space/sitemap.xml

@@ -5,8 +5,8 @@
 #   bash deploy/verify.sh
 #
 # Локальный прогон без DNS и настоящего сертификата (стенд на 127.0.0.1):
-#   BASE_URL=https://greengarden.run.place:8443 BASE_HTTP=http://127.0.0.1:8080 \
-#   CURL_OPTS='--resolve greengarden.run.place:8443:127.0.0.1' bash deploy/verify.sh
+#   BASE_URL=https://green-courtyard.space:8443 BASE_HTTP=http://127.0.0.1:8080 \
+#   CURL_OPTS='--resolve green-courtyard.space:8443:127.0.0.1' bash deploy/verify.sh
 #
 # Выходной код 0 — все проверки прошли.
 
@@ -50,8 +50,17 @@ echo "Проверяем $BASE"
 # ---------- 1. Маршруты ----------
 echo
 log "Страницы и статика — ожидаем 200"
-for p in / /index.html /catalog.html /offer /privacy-policy /css/style.css /js/main.js /img/logo.png; do
+for p in / /catalog /catalog/abrikos-krasnoschekiy /collections/golubika \
+         /guides /guides/kak-vybrat-sazhenets /services /additional-services \
+         /contacts /delivery /admin /offer /privacy-policy /robots.txt \
+         /sitemap.xml /css/style.css /js/main.js /img/logo.png; do
     check "GET $p" "200" "$(code "$BASE$p")"
+done
+
+log "Старые адреса .html — ожидаем 301"
+for p in /index.html /catalog.html /catalog/abrikos-krasnoschekiy.html \
+         /services.html /contacts.html; do
+    check "GET $p" "301" "$(code "$BASE$p")"
 done
 
 log "Служебные пути — ожидаем 404 (а не 403: ответ не должен подтверждать существование)"

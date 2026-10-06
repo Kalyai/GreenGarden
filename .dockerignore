@@ -10,6 +10,12 @@ backend/admin_token.txt
 backend/admin_chat_ids.txt
 backend/leads.json
 backend/chats.json
+backend/local_admin_password.txt
+backend/local_site_password.txt
+backend/local_tg_password.txt
+backend/bot_auth_state.json
+backend/catalog-overrides.json
+backend/catalog-media/
 *.json.tmp
 *.pem
 *.key
@@ -22,6 +28,7 @@ backend/chats.json
 .qwen
 .cache
 deploy/backups
+output/
 
 # --- Артефакты и локальный мусор -------------------------------------------
 **/__pycache__
@@ -39,4 +46,3 @@ Makefile
 Dockerfile
 docker-compose.yml
 requirements.txt
-tools

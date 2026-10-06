@@ -13,10 +13,17 @@ backend/admin_chat_ids.txt
 # В репозиторий не попадают ни при каких обстоятельствах.
 backend/leads.json
 backend/chats.json
+backend/local_admin_password.txt
+backend/local_site_password.txt
+backend/local_tg_password.txt
+backend/bot_auth_state.json
+backend/catalog-overrides.json
+backend/catalog-media/
 *.json.tmp
 
 # --- Кеш и артефакты сборки ----------------------------------------------
 .cache/
+/output/
 
 # --- Python ---------------------------------------------------------------
 __pycache__/

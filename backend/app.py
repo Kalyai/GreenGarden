@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Сайт «Зелёный дворик» + два Telegram-бота заявок.
+"""Сайт «Зелёный дворик», защищённая админка и Telegram-бот заявок.
 
 Один процесс и только стандартная библиотека:
   * HTTP-сервер — статика сайта, /privacy-policy, /offer, POST /api/lead;
   * бот заявок (bot_token.txt) — принимает пароль, получает новые заявки,
     ведёт список «Заявки для перезвона»;
-  * бот админки (admin_token.txt) — просмотр и правка базы заявок.
+  * админка /admin — каталог и заявки.
 
 Доступ к ботам по паролю: 5 попыток, затем чат блокируется (сообщения
 игнорируются). «Деактивировать чат» снимает доступ, удаляет историю
@@ -19,15 +19,16 @@
 """
 
 import csv
+import hashlib
 import hmac
 import io
 import ipaddress
 import json
 import logging
-import math
 import os
 import queue
 import re
+import sys
 import threading
 import time
 import urllib.error
@@ -36,6 +37,9 @@ import urllib.request
 from collections import deque
 from datetime import datetime, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from catalog_store import CatalogStore
+from admin import Admin
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # папка сайта
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -47,7 +51,6 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip() or HERE
 LEADS_FILE = os.path.join(DATA_DIR, "leads.json")
 CHATS_FILE = os.path.join(DATA_DIR, "chats.json")
 TOKEN_FILE = os.path.join(DATA_DIR, "bot_token.txt")
-ADMIN_TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
 # Интерфейс для слушателя. По умолчанию только loopback: наружу приложение
 # смотрит через nginx. В контейнере задают SITE_HOST=0.0.0.0 — сеть контейнера
 # изолирована, а порт 8000 на хост не публикуется (см. docker-compose.yml).
@@ -55,12 +58,22 @@ HOST = os.environ.get("SITE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SITE_PORT", "8000"))
 TG_API = "https://api.telegram.org"
 
-# Пароль администратора берётся ТОЛЬКО из переменной окружения: значение в
-# исходнике неизбежно утекает вместе с ним (VCS, бэкап, раскрытие файла).
-# Пустой пароль означает «вход закрыт», а не «подходит любая строка».
-PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+# У сайта и бота разные секреты. В Docker — переменные окружения, локально —
+# закрытые файлы вне публичного каталога. Секретов в исходниках нет.
+def load_password(env_name, local_filename):
+    value = os.environ.get(env_name, "").strip()
+    if value:
+        return value
+    try:
+        with open(os.path.join(DATA_DIR, local_filename), encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
+
+
+SITE_PASSWORD = load_password("SITE_ADMIN_PASSWORD", "local_site_password.txt")
+BOT_PASSWORD = load_password("TELEGRAM_ADMIN_PASSWORD", "local_tg_password.txt")
 MAX_ATTEMPTS = 5
-PAGE_SIZE = 5
 
 # ---------- параметры защиты ----------
 
@@ -99,8 +112,6 @@ STATUS_LABEL = {
 WELCOME = {
     "leads": "Здравствуйте! Это бот заявок питомника «Зелёный дворик».\n"
              "Сюда будут приходить новые заявки с сайта, а также список заявок для перезвона.",
-    "admin": "Здравствуйте! Это бот админки заявок питомника «Зелёный дворик».\n"
-             "Здесь можно смотреть и править базу заявок и контакты.",
 }
 
 LOCK = threading.RLock()
@@ -220,6 +231,35 @@ def save_chats():
     save_json(CHATS_FILE, CHATS)
 
 
+def invalidate_bot_chats_on_password_change():
+    """Force re-authentication once when the bot credential changes.
+
+    Store a salted, deliberately expensive verifier, never the password.
+    Existing activated chats must not keep access after credential rotation.
+    """
+    state_path = os.path.join(DATA_DIR, "bot_auth_state.json")
+    state = load_json(state_path, {})
+    try:
+        salt = bytes.fromhex(state["salt"])
+        previous = bytes.fromhex(state["verifier"])
+        if len(salt) != 16 or len(previous) != 32:
+            raise ValueError("invalid bot auth state")
+    except (KeyError, ValueError, TypeError):
+        salt, previous = os.urandom(16), b""
+    current = hashlib.scrypt(BOT_PASSWORD.encode("utf-8"), salt=salt,
+                             n=2**14, r=8, p=1, dklen=32)
+    if previous and hmac.compare_digest(current, previous):
+        return
+    with LOCK:
+        for rec in CHATS:
+            if rec.get("bot") == "leads":
+                rec.update(activated=False, blocked=False, attempts=0, state=None)
+        save_chats()
+    fd = os.open(state_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        json.dump({"salt": salt.hex(), "verifier": current.hex()}, out)
+
+
 def digits_of(phone):
     return re.sub(r"\D", "", str(phone))
 
@@ -253,7 +293,7 @@ def ensure_rec(kind, chat_id):
 # ---------- Telegram Bot API ----------
 
 class Bot:
-    """Обёртка над Bot API для одного из двух ботов."""
+    """Обёртка над Bot API для бота заявок."""
 
     def __init__(self, kind, token):
         self.kind = kind
@@ -362,9 +402,7 @@ class Bot:
         """
         self.clear_transient(rec, chat_id)
         self.delete_message(chat_id, rec.pop("menu_msg", None))
-        hint = ("Меню: «Заявки для перезвона», «Деактивировать чат»."
-                if self.kind == "leads"
-                else "Меню: «Все заявки», «Все контакты», «Деактивировать чат».")
+        hint = "Меню: «Заявки для перезвона», «Деактивировать чат»."
         res = self.api("sendMessage", chat_id=chat_id, text=hint,
                        reply_markup=json.dumps(menu_keyboard(self.kind)))
         if res and res.get("ok"):
@@ -411,7 +449,6 @@ class Bot:
 
 
 LEADS_BOT = Bot("leads", load_token(TOKEN_FILE, "TELEGRAM_BOT_TOKEN"))
-ADMIN_BOT = Bot("admin", load_token(ADMIN_TOKEN_FILE, "TELEGRAM_ADMIN_TOKEN"))
 
 
 def escape(text):
@@ -421,11 +458,7 @@ def escape(text):
 # ---------- клавиатуры ----------
 
 def menu_keyboard(kind):
-    if kind == "leads":
-        return {"keyboard": [[{"text": "Заявки для перезвона"}],
-                             [{"text": "Деактивировать чат"}]],
-                "resize_keyboard": True}
-    return {"keyboard": [[{"text": "Все заявки"}, {"text": "Все контакты"}],
+    return {"keyboard": [[{"text": "Заявки для перезвона"}],
                          [{"text": "Деактивировать чат"}]],
             "resize_keyboard": True}
 
@@ -437,13 +470,6 @@ def lead_inline(lead_id):
     return {"inline_keyboard": [[
         {"text": "✅ Обработано", "callback_data": f"lead:{lead_id}:done"},
         {"text": "⏰ Перезвонить позже", "callback_data": f"lead:{lead_id}:callback"},
-    ]]}
-
-
-def confirm_inline():
-    return {"inline_keyboard": [[
-        {"text": "Да, подтверждаю", "callback_data": "confirm:yes"},
-        {"text": "Отмена", "callback_data": "confirm:no"},
     ]]}
 
 
@@ -572,9 +598,9 @@ def alert_if_anomaly():
             f"проверьте журнал безопасности.")
     with LOCK:
         targets = [c["chat_id"] for c in CHATS
-                   if c["bot"] == "admin" and c.get("activated") and not c.get("blocked")]
+                   if c["bot"] == "leads" and c.get("activated") and not c.get("blocked")]
     for chat_id in targets:
-        ADMIN_BOT.api("sendMessage", chat_id=chat_id, text=text)
+        LEADS_BOT.api("sendMessage", chat_id=chat_id, text=text)
 
 
 def retry_unpushed():
@@ -604,19 +630,23 @@ def purge_lead_refs(lead_id, chat_id=None):
 
 # ---------- вход по паролю и блокировка ----------
 
+def bot_password_valid(text):
+    return bool(BOT_PASSWORD) and hmac.compare_digest(
+        text.encode("utf-8"), BOT_PASSWORD.encode("utf-8"))
+
+
 def password_step(bot, rec, text, chat_id):
     if text == "/start":
-        rec["attempts"] = 0
         rec["state"] = None
         save_chats()
         # Одно сообщение вместо двух: приветствие + запрос пароля
         bot.clear_transient(rec, chat_id)
-        bot.send_auth(rec, chat_id, MAX_ATTEMPTS)
+        bot.send_auth(rec, chat_id, MAX_ATTEMPTS - rec["attempts"])
         return
 
     # Пароль не задан — вход закрыт для всех. Это защита от запуска
-    # без ADMIN_PASSWORD, когда пустая строка совпала бы с пустым вводом.
-    if not PASSWORD:
+    # без TELEGRAM_ADMIN_PASSWORD, когда пустая строка совпала бы с вводом.
+    if not BOT_PASSWORD:
         log_security("bot_login_misconfigured", bot=bot.kind, chat_id=chat_id)
         bot.api("sendMessage", chat_id=chat_id,
                 text="Вход недоступен: на сервере не задан пароль администратора.")
@@ -624,7 +654,7 @@ def password_step(bot, rec, text, chat_id):
 
     # compare_digest не позволяет измерить время ответа и подобрать пароль
     # посимвольно. Кодируем в байты: для str с кириллицей функция неприменима.
-    if hmac.compare_digest(text.encode("utf-8"), PASSWORD.encode("utf-8")):
+    if bot_password_valid(text):
         rec["activated"] = True
         rec["attempts"] = 0
         rec["state"] = None
@@ -739,228 +769,7 @@ def send_callback_list(bot, rec, chat_id):
                  reply_markup=json.dumps(lead_inline(lead["id"])))
 
 
-# ---------- админка: списки с пагинацией ----------
-
-def page_nav(page, pages, prefix):
-    nav = []
-    if page > 0:
-        nav.append({"text": "« Назад", "callback_data": f"{prefix}{page - 1}"})
-    nav.append({"text": f"{page + 1}/{pages}", "callback_data": f"{prefix}nop"})
-    if page + 1 < pages:
-        nav.append({"text": "Вперёд »", "callback_data": f"{prefix}{page + 1}"})
-    return nav
-
-
-def send_leads_page(bot, rec, chat_id, page):
-    with LOCK:
-        leads = sorted(LEADS, key=lambda l: l["id"], reverse=True)
-    pages = max(1, math.ceil(len(leads) / PAGE_SIZE))
-    page = max(0, min(page, pages - 1))
-    chunk = leads[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
-    if not chunk:
-        bot.send(chat_id, rec, text="Заявок пока нет.")
-        return
-    lines = [f"<b>Заявки, страница {page + 1} из {pages}</b>"]
-    rows = []
-    for lead in chunk:
-        lines.append(
-            f"#{lead['id']} · {escape(lead['ts'])} · {STATUS_LABEL.get(lead['status'], lead['status'])}\n"
-            f"{escape(lead['name'])}, {escape(lead['phone'])}")
-        rows.append([
-            {"text": f"✏️ #{lead['id']}", "callback_data": f"ledit:{lead['id']}"},
-            {"text": f"🗑 #{lead['id']}", "callback_data": f"ldel:{lead['id']}"},
-        ])
-    rows.append(page_nav(page, pages, "page:"))
-    rows.append([{"text": "↩️ Меню", "callback_data": "menu"}])
-    bot.send(chat_id, rec, text="\n\n".join(lines), parse_mode="HTML",
-             reply_markup=json.dumps({"inline_keyboard": rows}))
-
-
-def contacts_groups():
-    with LOCK:
-        groups = {}
-        for lead in LEADS:
-            key = digits_of(lead["phone"])
-            group = groups.setdefault(key, {"phone": lead["phone"],
-                                            "name": lead["name"], "count": 0})
-            group["count"] += 1
-            group["name"] = lead["name"]
-    return sorted(groups.values(), key=lambda g: (-g["count"], g["phone"]))
-
-
-def send_contacts_page(bot, rec, chat_id, page):
-    groups = contacts_groups()
-    pages = max(1, math.ceil(len(groups) / PAGE_SIZE))
-    page = max(0, min(page, pages - 1))
-    chunk = groups[page * PAGE_SIZE:(page + 1) * PAGE_SIZE]
-    if not chunk:
-        bot.send(chat_id, rec, text="Контактов пока нет.")
-        return
-    lines = [f"<b>Все контакты, страница {page + 1} из {pages}</b>"]
-    rows = []
-    for group in chunk:
-        key = digits_of(group["phone"])
-        lines.append(f"{escape(group['phone'])} · {escape(group['name'])} · заявок: {group['count']}")
-        rows.append([
-            {"text": f"✏️ {group['phone']}", "callback_data": f"cedit:{key}"},
-            {"text": f"🗑 {group['phone']}", "callback_data": f"cdel:{key}"},
-        ])
-    rows.append(page_nav(page, pages, "cpage:"))
-    rows.append([{"text": "↩️ Меню", "callback_data": "menu"}])
-    bot.send(chat_id, rec, text="\n\n".join(lines), parse_mode="HTML",
-             reply_markup=json.dumps({"inline_keyboard": rows}))
-
-
-# ---------- админка: редактирование и удаление с подтверждением ----------
-
-EDIT_LEAD_STEPS = [("name", "Введите новое имя:"),
-                   ("phone", "Введите новый телефон:"),
-                   ("comment", "Введите новый комментарий (или прочерк «-»):")]
-
-
-def start_lead_edit(bot, rec, chat_id, lead_id):
-    with LOCK:
-        lead = next((l for l in LEADS if l["id"] == lead_id), None)
-        if not lead:
-            return
-        draft = {"name": lead["name"], "phone": lead["phone"],
-                 "comment": lead.get("comment", "")}
-    rec["state"] = {"kind": "edit_lead", "id": lead_id, "step": 0, "draft": draft}
-    save_chats()
-    bot.send(chat_id, rec, text=f"Правка заявки #{lead_id}. {EDIT_LEAD_STEPS[0][1]}")
-
-
-def start_contact_edit(bot, rec, chat_id, key):
-    group = next((g for g in contacts_groups() if digits_of(g["phone"]) == key), None)
-    if not group:
-        bot.send(chat_id, rec, text="Контакт не найден.")
-        return
-    rec["state"] = {"kind": "edit_contact", "key": key, "step": 0,
-                    "draft": {"phone": group["phone"], "name": group["name"]}}
-    save_chats()
-    bot.send(chat_id, rec, text=f"Правка контакта {group['phone']}. Введите новый телефон:")
-
-
-def ask_confirm(bot, rec, chat_id, text):
-    bot.send(chat_id, rec, text=text, parse_mode="HTML",
-             reply_markup=json.dumps(confirm_inline()))
-
-
-def apply_confirm(bot, rec, chat_id, approved):
-    state = rec.get("state") or {}
-    rec["state"] = None
-    save_chats()
-    if not approved:
-        bot.send(chat_id, rec, text="Отменено.")
-        return
-    kind = state.get("kind")
-    if kind == "confirm_lead_delete":
-        lead_id = state["id"]
-        with LOCK:
-            lead = next((l for l in LEADS if l["id"] == lead_id), None)
-            if lead:
-                for message in lead.get("messages", []):
-                    target = find_rec(message.get("bot"), message["chat_id"])
-                    if target and message["message_id"] in target.get("sent_ids", []):
-                        target["sent_ids"].remove(message["message_id"])
-                    bot_for = LEADS_BOT if message.get("bot") == "leads" else ADMIN_BOT
-                    bot_for.api("deleteMessage", chat_id=message["chat_id"],
-                                message_id=message["message_id"])
-                LEADS[:] = [l for l in LEADS if l["id"] != lead_id]
-                save_json(LEADS_FILE, LEADS)
-                save_chats()
-        bot.send(chat_id, rec, text=f"Заявка #{lead_id} удалена.")
-    elif kind == "confirm_lead_save":
-        lead_id, draft = state["id"], state["draft"]
-        with LOCK:
-            lead = next((l for l in LEADS if l["id"] == lead_id), None)
-            if lead:
-                lead.update(draft)
-                save_json(LEADS_FILE, LEADS)
-        bot.send(chat_id, rec, text=f"Заявка #{lead_id} сохранена.")
-    elif kind == "confirm_contact_delete":
-        key = state["key"]
-        with LOCK:
-            doomed = [l for l in LEADS if digits_of(l["phone"]) == key]
-            for lead in doomed:
-                for message in lead.get("messages", []):
-                    target = find_rec(message.get("bot"), message["chat_id"])
-                    if target and message["message_id"] in target.get("sent_ids", []):
-                        target["sent_ids"].remove(message["message_id"])
-                    bot_for = LEADS_BOT if message.get("bot") == "leads" else ADMIN_BOT
-                    bot_for.api("deleteMessage", chat_id=message["chat_id"],
-                                message_id=message["message_id"])
-            LEADS[:] = [l for l in LEADS if digits_of(l["phone"]) != key]
-            save_json(LEADS_FILE, LEADS)
-            save_chats()
-        bot.send(chat_id, rec, text=f"Контакт и его заявки ({len(doomed)}) удалены.")
-    elif kind == "confirm_contact_save":
-        key, draft = state["key"], state["draft"]
-        with LOCK:
-            changed = 0
-            for lead in LEADS:
-                if digits_of(lead["phone"]) == key:
-                    lead["phone"] = draft["phone"]
-                    lead["name"] = draft["name"]
-                    changed += 1
-            save_json(LEADS_FILE, LEADS)
-        bot.send(chat_id, rec, text=f"Контакт обновлён в заявках: {changed}.")
-
-
-def handle_state(bot, rec, text, chat_id):
-    state = rec["state"]
-    kind = state["kind"]
-    if kind.startswith("confirm_"):
-        if text in ("/cancel", "Отмена"):
-            rec["state"] = None
-            save_chats()
-            bot.send(chat_id, rec, text="Отменено.")
-        else:
-            bot.send(chat_id, rec, text="Используйте кнопки под сообщением подтверждения.")
-        return
-    if text in ("/cancel", "Отмена"):
-        rec["state"] = None
-        save_chats()
-        bot.send(chat_id, rec, text="Правка отменена.")
-        return
-    if kind == "edit_lead":
-        step = state["step"]
-        field = EDIT_LEAD_STEPS[step][0]
-        value = text if text != "-" else ""
-        state["draft"][field] = value[:300]
-        step += 1
-        state["step"] = step
-        save_chats()
-        if step < len(EDIT_LEAD_STEPS):
-            bot.send(chat_id, rec, text=EDIT_LEAD_STEPS[step][1])
-        else:
-            draft = state["draft"]
-            rec["state"] = {"kind": "confirm_lead_save", "id": state["id"], "draft": draft}
-            save_chats()
-            ask_confirm(bot, rec, chat_id,
-                        f"Сохранить заявку #{state['id']} с такими данными?\n"
-                        f"Имя: {escape(draft['name'])}\nТелефон: {escape(draft['phone'])}\n"
-                        f"Комментарий: {escape(draft['comment'] or '—')}")
-        return
-    if kind == "edit_contact":
-        step = state["step"]
-        if step == 0:
-            state["draft"]["phone"] = text[:30]
-            state["step"] = 1
-            save_chats()
-            bot.send(chat_id, rec, text="Введите новое имя контакта:")
-        else:
-            state["draft"]["name"] = text[:60]
-            draft = state["draft"]
-            rec["state"] = {"kind": "confirm_contact_save", "key": state["key"],
-                            "draft": draft}
-            save_chats()
-            ask_confirm(bot, rec, chat_id,
-                        f"Обновить контакт во всех заявках?\n"
-                        f"Телефон: {escape(draft['phone'])}\nИмя: {escape(draft['name'])}")
-
-
-# ---------- команды-помощники админки ----------
+# ---------- команды бота заявок ----------
 
 def stats_text():
     today = datetime.now().strftime("%d.%m.%Y")
@@ -1036,16 +845,6 @@ def export_csv(bot, chat_id):
 
 # ---------- обработка обновлений ----------
 
-def parse_lead_id(raw):
-    """id заявки из callback_data: только цифры, иначе None.
-
-    callback_data формирует клиент Telegram, её подделывают, поэтому
-    голый int() падал необработанным исключением на «ldel:abc».
-    """
-    raw = str(raw)
-    return int(raw) if raw.isdigit() and len(raw) <= 9 else None
-
-
 def handle_update(bot, update):
     if "callback_query" in update:
         return handle_callback(bot, update["callback_query"])
@@ -1061,7 +860,8 @@ def handle_update(bot, update):
     if rec["blocked"]:
         return  # чат заблокирован: сообщения игнорируются
     if rec.get("state"):
-        return handle_state(bot, rec, text, chat_id)
+        rec["state"] = None
+        save_chats()
     if not rec["activated"]:
         return password_step(bot, rec, text, chat_id)
 
@@ -1073,25 +873,8 @@ def handle_update(bot, update):
             send_today_unprocessed(bot, rec, chat_id)
         return
 
-    if bot.kind == "leads":
-        if text == "Заявки для перезвона":
-            send_callback_list(bot, rec, chat_id)
-        elif text == "Деактивировать чат":
-            deactivate(bot, rec, chat_id)
-        elif text == "/stats":
-            bot.send(chat_id, rec, text=stats_text(), parse_mode="HTML")
-        elif text == "/export":
-            export_csv(bot, chat_id)
-        else:
-            bot.send(chat_id, rec,
-                     text="Используйте кнопки меню: «Заявки для перезвона» или «Деактивировать чат».")
-        return
-
-    # бот админки
-    if text == "Все заявки":
-        send_leads_page(bot, rec, chat_id, 0)
-    elif text == "Все контакты":
-        send_contacts_page(bot, rec, chat_id, 0)
+    if text == "Заявки для перезвона":
+        send_callback_list(bot, rec, chat_id)
     elif text == "Деактивировать чат":
         deactivate(bot, rec, chat_id)
     elif text == "/stats":
@@ -1100,8 +883,7 @@ def handle_update(bot, update):
         export_csv(bot, chat_id)
     else:
         bot.send(chat_id, rec,
-                 text="Используйте кнопки меню: «Все заявки», «Все контакты» или «Деактивировать чат».")
-
+                 text="Используйте кнопки меню: «Заявки для перезвона» или «Деактивировать чат».")
 
 def handle_callback(bot, cb):
     data = cb.get("data", "")
@@ -1112,41 +894,9 @@ def handle_callback(bot, cb):
     if not rec or rec["blocked"] or not rec["activated"]:
         return
 
-    if data == "confirm:yes":
-        return apply_confirm(bot, rec, chat_id, True)
-    if data == "confirm:no":
-        return apply_confirm(bot, rec, chat_id, False)
-    if data == "menu":
-        return bot.send_menu(rec, chat_id)
-
     match = re.fullmatch(r"lead:(\d+):(done|callback)", data)
     if match:
         return lead_action(bot, rec, int(match.group(1)), match.group(2), message_id)
-    if data.startswith("page:") and data[5:].isdigit():
-        return send_leads_page(bot, rec, chat_id, int(data[5:]))
-    if data.startswith("cpage:") and data[6:].isdigit():
-        return send_contacts_page(bot, rec, chat_id, int(data[6:]))
-    if data.startswith("ldel:"):
-        lead_id = parse_lead_id(data[5:])
-        if lead_id is None:
-            return log_security("bad_callback_data", chat_id=chat_id,
-                                data=clean_for_log(data, 40))
-        rec["state"] = {"kind": "confirm_lead_delete", "id": lead_id}
-        save_chats()
-        return ask_confirm(bot, rec, chat_id, f"Удалить заявку #{lead_id} безвозвратно?")
-    if data.startswith("ledit:"):
-        lead_id = parse_lead_id(data[6:])
-        if lead_id is None:
-            return log_security("bad_callback_data", chat_id=chat_id,
-                                data=clean_for_log(data, 40))
-        return start_lead_edit(bot, rec, chat_id, lead_id)
-    if data.startswith("cdel:"):
-        rec["state"] = {"kind": "confirm_contact_delete", "key": data[5:]}
-        save_chats()
-        return ask_confirm(bot, rec, chat_id,
-                           "Удалить контакт и все его заявки безвозвратно?")
-    if data.startswith("cedit:"):
-        return start_contact_edit(bot, rec, chat_id, data[6:])
 
 
 # ---------- HTTP: статика сайта + приём заявок ----------
@@ -1317,14 +1067,23 @@ def normalize_items(raw_items):
     return items
 
 
+CATALOG = CatalogStore(DATA_DIR)
+ADMIN = Admin(CATALOG, SITE_PASSWORD, DATA_DIR, LEADS, LOCK,
+              lambda: save_json(LEADS_FILE, LEADS), PUBLIC_HTTPS)
+
+
 class Handler(SimpleHTTPRequestHandler):
     # server_version без sys_version: иначе заголовок Server раскрывает
     # версию Python и подсказывает, какие CVE примерять к серверу.
     server_version = "GreenDvorik"
     sys_version = ""
 
-    # ЧПУ: /privacy-policy и /offer отдают соответствующие html-файлы
-    PAGES = {"/privacy-policy": "/privacy-policy.html", "/offer": "/offer.html"}
+    # ЧПУ основных страниц и карточек товаров.
+    PAGES = {"/privacy-policy": "/privacy-policy.html", "/offer": "/offer.html",
+             "/catalog": "/catalog.html", "/services": "/services.html",
+             "/additional-services": "/additional-services.html",
+             "/contacts": "/contacts.html", "/guides": "/guides.html",
+             "/delivery": "/delivery.html"}
 
     def __init__(self, *args, **kwargs):
         self.denied_path = None
@@ -1338,7 +1097,7 @@ class Handler(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("Referrer-Policy", "strict-origin")
+        self.send_header("Referrer-Policy", "no-referrer" if self.path.startswith("/admin") else "strict-origin")
         self.send_header("Permissions-Policy",
                          "geolocation=(), microphone=(), camera=(), payment=()")
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
@@ -1379,11 +1138,17 @@ class Handler(SimpleHTTPRequestHandler):
                 return False                  # скрытые файлы и каталоги
             if parts[0] in DENIED_DIRS:
                 return False                  # backend/, tools/ и прочее
+        # robots.txt is public; other .txt files (including bot tokens) stay blocked.
+        if rel == "robots.txt":
+            return True
         return not real.lower().endswith(DENIED_SUFFIXES)
 
     def translate_path(self, path):
         clean = path.split("?", 1)[0].split("#", 1)[0]
-        candidate = super().translate_path(self.PAGES.get(clean, path))
+        mapped = self.PAGES.get(clean, path)
+        if re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+", clean):
+            mapped = clean + ".html"
+        candidate = super().translate_path(mapped)
         if not self._is_servable(candidate):
             self.denied_path = clean
             # Несуществующий путь даёт честные 404 без раскрытия причины.
@@ -1461,6 +1226,10 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if not self._precheck(self._limit_for_path()):
             return
+        if self._dynamic_get():
+            return
+        if self._redirect_legacy_html():
+            return
         super().do_GET()
         if self.denied_path:
             log_security("path_denied", ip=self.client_ip(),
@@ -1469,14 +1238,87 @@ class Handler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         if not self._precheck(self._limit_for_path()):
             return
+        if self._dynamic_get():
+            return
+        if self._redirect_legacy_html():
+            return
         super().do_HEAD()
         if self.denied_path:
             log_security("path_denied", ip=self.client_ip(),
                          path=clean_for_log(self.denied_path, 120))
 
+    def _dynamic_get(self):
+        path, _, query = self.path.partition("?")
+        if path == "/admin" or path.startswith("/admin/"):
+            ADMIN.get(self, path, query)
+            return True
+        if path.startswith("/catalog-media/"):
+            name = path[len("/catalog-media/"):]
+            if not re.fullmatch(r"[a-f0-9]{36}\.(?:jpg|png|webp)", name):
+                self.send_error(404)
+                return True
+            filepath = os.path.join(DATA_DIR, "catalog-media", name)
+            if not os.path.isfile(filepath):
+                self.send_error(404)
+                return True
+            content_type = "image/jpeg" if name.endswith("jpg") else "image/png" if name.endswith("png") else "image/webp"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(os.path.getsize(filepath)))
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+            self.end_headers()
+            if self.command != "HEAD":
+                with open(filepath, "rb") as image:
+                    while chunk := image.read(64 * 1024):
+                        self.wfile.write(chunk)
+            return True
+        if path == "/catalog" or re.fullmatch(r"/(?:catalog|collections)/[a-z0-9-]+", path):
+            page = CATALOG.public_html(path)
+            if page is None:
+                self.send_error(404)
+                return True
+            body = page.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+            return True
+        return False
+
+    def _redirect_legacy_html(self):
+        path, separator, query = self.path.partition("?")
+        targets = {"/index.html": "/", "/catalog.html": "/catalog",
+                   "/offer.html": "/offer", "/privacy-policy.html": "/privacy-policy",
+                   "/services.html": "/services",
+                   "/additional-services.html": "/additional-services",
+                   "/contacts.html": "/contacts",
+                   "/delivery.html": "/delivery", "/guides.html": "/guides",
+                   "/catalog/": "/catalog"}
+        target = targets.get(path)
+        if target is None and re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+\.html", path):
+            target = path[:-5]
+        if target is None and path.endswith("/") and path[:-1] in self.PAGES:
+            target = path[:-1]
+        if target is None and re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+/", path):
+            candidate = os.path.join(ROOT, path.strip("/") + ".html")
+            if os.path.isfile(candidate):
+                target = path[:-1]
+        if target is None:
+            return False
+        self.send_response(301)
+        self.send_header("Location", target + (separator + query if separator else ""))
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return True
+
     def do_POST(self):
         if not self._precheck("public"):
             return
+        if self.path == "/admin" or self.path.startswith("/admin/"):
+            return ADMIN.post(self, self.path.split("?", 1)[0])
         if self.path.split("?", 1)[0] != "/api/lead":
             self.send_error(404, "Not Found")
             return
@@ -1612,11 +1454,15 @@ def main():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     ensure_data_dir()
-    if not PASSWORD:
-        log_security("admin_password_missing")
-        print("[warn] ADMIN_PASSWORD не задан: вход в ботов закрыт для всех")
+    invalidate_bot_chats_on_password_change()
+    if not SITE_PASSWORD:
+        log_security("site_password_missing")
+        print("[warn] SITE_ADMIN_PASSWORD не задан: веб-админка закрыта")
+    if not BOT_PASSWORD:
+        log_security("bot_password_missing")
+        print("[warn] TELEGRAM_ADMIN_PASSWORD не задан: вход в бот закрыт")
 
-    for bot in (LEADS_BOT, ADMIN_BOT):
+    for bot in (LEADS_BOT,):
         if bot.token:
             threading.Thread(target=bot.loop, daemon=True).start()
         else:

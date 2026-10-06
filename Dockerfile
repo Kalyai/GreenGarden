@@ -3,7 +3,7 @@
 # «Зелёный дворик»: один контекст сборки — три стадии.
 #
 #   static — только публичные файлы сайта (источник для COPY, без ОС);
-#   app    — процесс Python: приём заявок + два Telegram-бота;
+#   app    — процесс Python: каталог, админка, заявки и Telegram-бот;
 #   nginx  — раздача статики и TLS-терминация.
 #
 # Оба образа собираются из одного коммита, поэтому HTML, js/main.js и
@@ -23,6 +23,10 @@
 FROM scratch AS static
 
 COPY *.html /static/
+COPY catalog/ /static/catalog/
+COPY collections/ /static/collections/
+COPY guides/ /static/guides/
+COPY sitemap.xml robots.txt /static/
 COPY css/   /static/css/
 COPY img/   /static/img/
 COPY js/    /static/js/
@@ -56,7 +60,9 @@ WORKDIR /app
 # Статика в образе приложения нужна не для продакшена (её отдаёт nginx),
 # а для HEALTHCHECK и для запуска без nginx — например, при диагностике.
 COPY --from=static /static /app/
-COPY backend/app.py /app/backend/app.py
+COPY backend/app.py backend/admin.py backend/catalog_store.py /app/backend/
+COPY legacy-catalog.json /app/legacy-catalog.json
+COPY tools/catalog_taxonomy.py tools/seo_content.py tools/seo_site.py tools/render_legacy_catalog.py /app/tools/
 
 # Процесс слушает 0.0.0.0 только внутри своей сети контейнера: порт 8000
 # не публикуется на хост (см. docker-compose.yml), снаружи его не достать.
@@ -89,6 +95,7 @@ COPY --from=static /static /usr/share/nginx/html/
 # контейнера (${DOMAIN}), а переменные nginx ($host, $uri) остаются нетронутыми.
 COPY deploy/nginx/greengarden.conf.template /etc/nginx/templates/default.conf.template
 COPY deploy/nginx/snippets/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY deploy/nginx/snippets/proxy-app.conf /etc/nginx/snippets/proxy-app.conf
 
 EXPOSE 80 443
 
