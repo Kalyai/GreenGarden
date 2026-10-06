@@ -138,6 +138,7 @@ import app
 class FakeBot:
     kind = 'leads'
     def clear_transient(self, *args): pass
+    def delete_message(self, *args): pass
     def send_auth(self, *args): pass
 rec = {'bot':'leads','chat_id':123,'attempts':0,'activated':False,'blocked':False,'state':None,'transient_ids':[]}
 app.CHATS.append(rec)
@@ -148,6 +149,29 @@ print(rec['attempts'])'''
             result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env,
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), "1")
+
+    def test_bot_start_recreates_stale_auth_prompt(self):
+        with tempfile.TemporaryDirectory() as folder:
+            env = os.environ.copy()
+            env.update({"SITE_ADMIN_PASSWORD": self.password, "TELEGRAM_ADMIN_PASSWORD": self.bot_password,
+                        "DATA_DIR": folder, "TELEGRAM_BOT_TOKEN": ""})
+            script = '''import sys
+sys.path.insert(0, 'backend')
+import app
+class FakeBot:
+    kind = 'leads'
+    def clear_transient(self, *args): pass
+    def delete_message(self, chat_id, message_id):
+        print('deleted', message_id)
+    def send_auth(self, rec, chat_id, attempts_left):
+        print('fresh', rec.get('auth_msg'), rec.get('auth_text'), attempts_left)
+rec = {'bot':'leads','chat_id':123,'attempts':0,'activated':False,'blocked':False,
+       'state':None,'transient_ids':[],'auth_msg':42,'auth_text':'old prompt'}
+app.CHATS.append(rec)
+app.password_step(FakeBot(), rec, '/start', 123)'''
+            result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env,
+                                    check=True, capture_output=True, text=True)
+            self.assertEqual(result.stdout.strip().splitlines(), ["deleted 42", "fresh None None 5"])
 
     def test_auth_edit_persistence_and_public_render(self):
         path = "/catalog/abrikos-chempion-severa"

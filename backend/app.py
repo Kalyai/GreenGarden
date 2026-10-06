@@ -638,9 +638,14 @@ def bot_password_valid(text):
 def password_step(bot, rec, text, chat_id):
     if text == "/start":
         rec["state"] = None
+        # После перезапуска/смены пароля сохранённый auth_msg может уже не
+        # существовать в чате. Явная команда /start всегда создаёт новое
+        # приглашение, иначе бот молча возвращает кешированный message_id.
+        old_auth_msg = rec.pop("auth_msg", None)
+        rec.pop("auth_text", None)
         save_chats()
-        # Одно сообщение вместо двух: приветствие + запрос пароля
         bot.clear_transient(rec, chat_id)
+        bot.delete_message(chat_id, old_auth_msg)
         bot.send_auth(rec, chat_id, MAX_ATTEMPTS - rec["attempts"])
         return
 
