@@ -310,6 +310,11 @@ def valid_name(name):
     return 1 <= len(name) <= 60
 
 
+def digits_of(phone):
+    """Phone normalization is shared by validation and per-phone rate limits."""
+    return re.sub(r"\D", "", str(phone))
+
+
 def valid_phone(phone):
     if PHONE_RU_RE.match(phone):
         return True

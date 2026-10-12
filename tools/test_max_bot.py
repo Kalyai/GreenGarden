@@ -1,5 +1,6 @@
 """MAX protocol, authorization, retry and HTTP integration regression checks."""
 import hashlib
+from contextlib import closing
 import http.client
 import io
 import json
@@ -294,7 +295,7 @@ class MaxHTTPTest(unittest.TestCase):
                         headers["X-Max-Bot-Api-Secret"] = webhook_secret
                         headers["Content-Type"] = "application/json"
                     elif body is not None:
-                        headers["Content-Type"] = "application/x-www-form-urlencoded"
+                        headers["Content-Type"] = "application/json" if path == "/api/lead" else "application/x-www-form-urlencoded"
                     conn.request(method, path, body, headers)
                     response = conn.getresponse()
                     result = response.status, dict(response.getheaders()), response.read().decode()
@@ -327,6 +328,25 @@ class MaxHTTPTest(unittest.TestCase):
                         break
                     time.sleep(.05)
                 self.assertIn("Диалог администратора подключён", page)
+                order = {"name": "Проверка MAX", "phone": "+7 (900) 000-00-00", "source": "cta",
+                         "elapsed_ms": 5000, "consent": True,
+                         "items": [{"name": "Ирга", "quantity": 2, "price": "1000 ₽"}]}
+                denied = dict(order, consent=False)
+                self.assertEqual(request("POST", "/api/lead", json.dumps(denied))[0], 400)
+                status, _, result = request("POST", "/api/lead", json.dumps(order))
+                self.assertEqual(status, 200)
+                self.assertEqual(json.loads(result)["id"], 1)
+                saved = json.loads((Path(folder) / "leads.json").read_text())[0]
+                self.assertEqual(saved["items"][0]["quantity"], 2)
+                self.assertEqual(saved["name"], "Проверка MAX")
+                # Wake the periodic sender without a real MAX token or network.
+                for _ in range(40):
+                    with closing(sqlite3.connect(Path(folder) / "max-bot.sqlite")) as database:
+                        receipt = database.execute("SELECT mid FROM deliveries WHERE lead_id=1 AND chat_id=100").fetchone()
+                    if receipt:
+                        break
+                    time.sleep(.3)
+                self.assertTrue(receipt, "the stored lead was not delivered by the MAX worker")
                 self.assertEqual(request("POST", "/admin/max/disconnect", urlencode({"csrf": csrf}), cookie)[0], 303)
                 self.assertIn("Диалог ещё не подключён", request("GET", "/admin/max", cookie=cookie)[2])
             finally:
