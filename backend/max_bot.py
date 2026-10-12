@@ -233,11 +233,16 @@ class MaxBotService:
                 CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, body TEXT NOT NULL,
                     done INTEGER NOT NULL DEFAULT 0, attempts INTEGER NOT NULL DEFAULT 0, next_try REAL NOT NULL DEFAULT 0);
                 CREATE TABLE IF NOT EXISTS pairing (digest TEXT PRIMARY KEY, expires REAL NOT NULL);
-                CREATE TABLE IF NOT EXISTS recipient (id INTEGER PRIMARY KEY CHECK(id=1), chat_id INTEGER, user_id INTEGER);
+                CREATE TABLE IF NOT EXISTS recipients (chat_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, name TEXT NOT NULL DEFAULT '');
                 CREATE TABLE IF NOT EXISTS deliveries (lead_id INTEGER, chat_id INTEGER, mid TEXT,
                     PRIMARY KEY(lead_id, chat_id));
                 CREATE TABLE IF NOT EXISTS state (key TEXT PRIMARY KEY, value TEXT);
             ''')
+            # Preserve the existing authorized dialog when upgrading the singleton schema.
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recipient'").fetchone():
+                db.execute("INSERT OR IGNORE INTO recipients(chat_id,user_id) SELECT chat_id,user_id FROM recipient WHERE chat_id IS NOT NULL AND user_id IS NOT NULL")
+                db.execute("DROP TABLE recipient")
+                db.commit()
             os.chmod(self.db_path, 0o600)
             self._initialized = True
         try:
@@ -254,9 +259,13 @@ class MaxBotService:
         return bool(self.token and re.fullmatch(r"[A-Za-z0-9_-]{32,256}", self.secret)
                     and re.fullmatch(r"[A-Za-z0-9_]{1,80}", self.username))
 
-    def get_recipient(self):
+    def list_recipients(self):
         with self.db_lock, self._db() as db:
-            row = db.execute("SELECT chat_id,user_id FROM recipient WHERE id=1").fetchone()
+            return [dict(row) for row in db.execute("SELECT chat_id,user_id,name FROM recipients ORDER BY chat_id")]
+
+    def get_recipient(self, chat_id=None):
+        with self.db_lock, self._db() as db:
+            row = db.execute("SELECT chat_id,user_id FROM recipients WHERE (? IS NULL OR chat_id=?) ORDER BY chat_id LIMIT 1", (chat_id, chat_id)).fetchone()
             return dict(row) if row else None
 
     def create_link(self):
@@ -267,21 +276,24 @@ class MaxBotService:
         payload = secrets.token_urlsafe(32)
         digest = hashlib.sha256(payload.encode()).hexdigest()
         with self.db_lock, self._db() as db:
-            db.execute("DELETE FROM pairing")
+            db.execute("DELETE FROM pairing WHERE expires<?", (time.time(),))
             db.execute("INSERT INTO pairing VALUES (?,?)", (digest, time.time() + 600))
         return f"https://max.ru/{self.username}?start={payload}"
 
-    def disconnect(self):
+    def disconnect(self, chat_id=None):
         with self.db_lock, self._db() as db:
-            db.execute("DELETE FROM recipient")
-            db.execute("DELETE FROM pairing")
+            if chat_id is None:
+                db.execute("DELETE FROM recipients")
+                db.execute("DELETE FROM pairing")
+            else:
+                db.execute("DELETE FROM recipients WHERE chat_id=?", (chat_id,))
 
     def status(self):
         with self.db_lock, self._db() as db:
             queue_size = db.execute("SELECT count(*) FROM events WHERE done=0").fetchone()[0]
         return {"configured": self.configured, "connected": bool(self.get_recipient()),
                 "network": self.network_status, "pending_events": queue_size,
-                "webhook_ready": valid_webhook_url(self.webhook_url)}
+                "webhook_ready": valid_webhook_url(self.webhook_url), "recipients": self.list_recipients()}
 
     @staticmethod
     def normalize(update):
@@ -294,6 +306,9 @@ class MaxBotService:
         result = {"kind": kind, "timestamp": stamp}
         if kind in ("bot_started", "bot_stopped"):
             result.update(chat_id=update.get("chat_id"), user_id=(update.get("user") or {}).get("user_id"))
+            user = update.get("user") or {}
+            name = user.get("name") or user.get("first_name") or ""
+            result["name"] = name[:120] if isinstance(name, str) else ""
             payload = update.get("payload") or ""
             if not isinstance(payload, str) or len(payload) > 128:
                 raise ValueError("invalid payload")
@@ -359,12 +374,12 @@ class MaxBotService:
             row = db.execute("SELECT expires FROM pairing WHERE digest=?", (digest,)).fetchone()
             if not row or row[0] < time.time():
                 return False
-            db.execute("DELETE FROM pairing")
-            db.execute("INSERT OR REPLACE INTO recipient VALUES (1,?,?)", (event["chat_id"], event["user_id"]))
+            db.execute("DELETE FROM pairing WHERE digest=?", (digest,))
+            db.execute("INSERT OR REPLACE INTO recipients VALUES (?,?,?)", (event["chat_id"], event["user_id"], event.get("name", "")))
         return True
 
     def _authorized(self, event):
-        rec = self.get_recipient()
+        rec = self.get_recipient(event["chat_id"])
         return rec and rec["user_id"] == event["user_id"] and rec["chat_id"] == event["chat_id"]
 
     def menu(self, chat):
@@ -399,7 +414,7 @@ class MaxBotService:
                 self.client.send(chat, "Подключите этот диалог через раздел MAX в админке сайта. Пароль в чат отправлять не нужно.")
             return
         if event["kind"] == "bot_stopped":
-            self.disconnect()
+            self.disconnect(chat)
             return
         command = event.get("command", "/menu")
         if event["kind"] == "message_callback" and not command.startswith("lead:"):
@@ -422,7 +437,7 @@ class MaxBotService:
             self.client.answer(event["callback_id"])
             self.client.send(chat, f"Заявка №{number}: {LABELS['done' if action == 'done' else 'callback']}")
         elif command in ("menu:disconnect", "Деактивировать чат"):
-            self.disconnect()
+            self.disconnect(chat)
             self.client.send(chat, "Уведомления отключены. Повторное подключение — через админку сайта.")
         elif command in ("menu:callback", "Заявки для перезвона", "menu:new"):
             status = "new" if command == "menu:new" else "callback"
@@ -464,18 +479,23 @@ class MaxBotService:
         return True
 
     def retry_leads(self):
-        rec = self.get_recipient()
-        if not rec:
-            return
-        delivered = 0
-        for lead in self._rows():
-            if self.get_recipient() != rec:
-                break
-            if lead.get("status") in ("new", "callback"):
-                delivered += int(self._deliver(lead, rec["chat_id"]))
-                if delivered >= 10:
-                    break
-        self.check_anomaly(rec["chat_id"])
+        for rec in self.list_recipients():
+            chat = rec["chat_id"]
+            delivered = 0
+            try:
+                for lead in self._rows():
+                    if self.get_recipient(chat) != {"chat_id": chat, "user_id": rec["user_id"]}:
+                        break
+                    if lead.get("status") in ("new", "callback"):
+                        delivered += int(self._deliver(lead, chat))
+                        if delivered >= 10:
+                            break
+                if self.get_recipient(chat):
+                    self.check_anomaly(chat)
+            except MaxAPIError as exc:
+                # One unavailable dialog must not block notifications to the others.
+                self.network_status = str(exc)
+                LOG.warning("MAX delivery retry: %s", exc)
 
     def check_anomaly(self, chat):
         since = datetime.now() - timedelta(hours=1)
@@ -488,12 +508,12 @@ class MaxBotService:
         if count <= int(os.environ.get("LEAD_ALERT_THRESHOLD", "100")):
             return
         with self.db_lock, self._db() as db:
-            row = db.execute("SELECT value FROM state WHERE key='last_alert'").fetchone()
+            row = db.execute("SELECT value FROM state WHERE key=?", (f"last_alert:{chat}",)).fetchone()
         if row and time.time() - float(row[0]) < 3600:
             return
         self.client.send(chat, f"⚠️ За последний час поступило {count} заявок. Проверьте обращения в админке.")
         with self.db_lock, self._db() as db:
-            db.execute("INSERT OR REPLACE INTO state VALUES ('last_alert',?)", (str(time.time()),))
+            db.execute("INSERT OR REPLACE INTO state VALUES (?,?)", (f"last_alert:{chat}", str(time.time())))
 
     def check_api(self):
         me = self.client.request("GET", "/me")
@@ -520,7 +540,7 @@ class MaxBotService:
             fingerprint = hashlib.sha256(self.token.encode()).hexdigest()
             previous = db.execute("SELECT value FROM state WHERE key='bot_token'").fetchone()
             if not previous or not hmac.compare_digest(previous[0], fingerprint):
-                db.execute("DELETE FROM recipient")
+                db.execute("DELETE FROM recipients")
                 db.execute("DELETE FROM pairing")
                 db.execute("DELETE FROM events")
                 db.execute("DELETE FROM deliveries")

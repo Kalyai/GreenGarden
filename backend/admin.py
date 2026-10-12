@@ -264,7 +264,10 @@ class Admin:
             if path == "/admin/max/connect" and self.max_bot:
                 return self._max(handler, session, self.max_bot.create_link())
             if path == "/admin/max/disconnect" and self.max_bot:
-                self.max_bot.disconnect()
+                chat = data.get("chat_id", [""])[0]
+                if not re.fullmatch(r"-?\d{1,20}", chat):
+                    raise ValueError("Укажите диалог для отключения")
+                self.max_bot.disconnect(int(chat))
                 return self._redirect(handler, "/admin/max")
             match = re.fullmatch(r"/admin/products/([a-z0-9-]+)", path)
             if match:
@@ -380,12 +383,13 @@ class Admin:
     def _max(self, handler, session, link=""):
         status = self.max_bot.status()
         configured = "Настройки заданы" if status["configured"] else "Сначала задайте настройки MAX на сервере (MAX.md)"
-        connection = "Диалог администратора подключён" if status["connected"] else "Диалог ещё не подключён"
+        connection = f"Подключено диалогов: {len(status['recipients'])}" if status["connected"] else "Диалог ещё не подключён"
         csrf = f'<input type="hidden" name="csrf" value="{E(session["csrf"])}">'
         note = '' if status['webhook_ready'] else '<p>На локальном сайте проверяется соединение с API. Подключите диалог на рабочем сайте после настройки webhook по MAX.md.</p>'
-        invitation = (f'<section class="admin-panel"><h2>Одноразовое подключение</h2><p>Откройте ссылку в своём MAX и нажмите «Начать». Она действует 10 минут и используется один раз. Не пересылайте её другим людям.</p>'
-                      f'<a class="admin-brand" href="{E(link)}" rel="noreferrer" referrerpolicy="no-referrer">Подключить мой MAX</a></section>') if link else ""
-        body = f'''<p class="admin-eyebrow">Уведомления о заявках</p><h1>Бот MAX</h1><section class="admin-panel"><p>{E(configured)}</p><p>{E(connection)}</p><p>Соединение: {E(status['network'])}</p><p>Событий в очереди: {status['pending_events']}</p><p>Подключается один личный диалог. Пароль от сайта в мессенджер вводить не нужно.</p>{note}<form method="post" action="/admin/max/connect">{csrf}<button type="submit"{' disabled' if not (status['configured'] and status['webhook_ready']) else ''}>Создать ссылку подключения</button></form><form method="post" action="/admin/max/disconnect">{csrf}<button type="submit">Отключить MAX</button></form></section>{invitation}'''
+        invitation = (f'<section class="admin-panel"><h2>Одноразовое подключение</h2><p>Откройте ссылку в своём MAX или передайте нужному сотруднику. Нажмите «Начать». Ссылка действует 10 минут и используется один раз. Для каждого человека создайте отдельную ссылку.</p>'
+                      f'<a class="admin-brand" href="{E(link)}" rel="noreferrer" referrerpolicy="no-referrer">Подключить MAX</a></section>') if link else ""
+        recipients = ''.join(f'<section class="admin-panel"><h2>{E(rec["name"] or "Пользователь MAX")}</h2><p>ID пользователя: {rec["user_id"]} · ID диалога: {rec["chat_id"]}</p><form method="post" action="/admin/max/disconnect">{csrf}<input type="hidden" name="chat_id" value="{rec["chat_id"]}"><button type="submit">Отключить этот диалог</button></form></section>' for rec in status['recipients'])
+        body = f'''<p class="admin-eyebrow">Уведомления о заявках</p><h1>Бот MAX</h1><section class="admin-panel"><p>{E(configured)}</p><p>{E(connection)}</p><p>Соединение: {E(status['network'])}</p><p>Событий в очереди: {status['pending_events']}</p><p>Можно подключить несколько личных диалогов. Все подключённые пользователи получают заявки и могут менять их общий статус. Пароль от сайта в мессенджер вводить не нужно.</p>{note}<form method="post" action="/admin/max/connect">{csrf}<button type="submit"{' disabled' if not (status['configured'] and status['webhook_ready']) else ''}>Создать ссылку подключения</button></form></section>{invitation}{recipients}'''
         return self._send(handler, 200, self._shell("MAX", body, session))
 
     def _upload(self, handler, slug, session):

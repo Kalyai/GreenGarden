@@ -107,12 +107,59 @@ class MaxServiceTest(unittest.TestCase):
         self.service.drain_once()
         self.assertIsNone(self.service.get_recipient())
 
-    def test_new_link_revokes_previous_link(self):
+    def test_new_link_keeps_previous_invitation_valid(self):
         old = parse_qs(urlsplit(self.service.create_link()).query)["start"][0]
         self.service.create_link()
         self.service.accept({"update_type": "bot_started", "timestamp": 1, "chat_id": 100,
                              "user": {"user_id": 200}, "payload": old})
         self.service.drain_once()
+        self.assertEqual(self.service.get_recipient()["user_id"], 200)
+
+    def test_multiple_recipients_delivery_and_independent_disconnect(self):
+        self.pair()
+        self.pair(chat=300, user=400)
+        self.assertEqual(len(self.service.list_recipients()), 2)
+        self.service.retry_leads()
+        cards = [item for item in self.client.sent if item.get("buttons") and "Заявка №" in item["text"]]
+        self.assertEqual({item["chat"] for item in cards}, {100, 300})
+        self.assertEqual(len(cards), 2)
+        self.service.retry_leads()
+        self.assertEqual(len(self.client.sent), 4)  # two menus and two cards
+        self.service.process(self.service.normalize(message(text="Деактивировать чат")))
+        self.assertIsNone(self.service.get_recipient(100))
+        self.assertEqual(self.service.get_recipient(300)["user_id"], 400)
+        self.assertFalse(self.service._authorized({"chat_id": 300, "user_id": 200}))
+        self.service.process({"kind": "bot_stopped", "chat_id": 300, "user_id": 400})
+        self.assertEqual(self.service.list_recipients(), [])
+
+    def test_unavailable_dialog_does_not_block_other_recipient(self):
+        self.pair()
+        self.pair(chat=300, user=400)
+        original = self.client.send
+        def send(chat, *args, **kwargs):
+            if chat == 100:
+                raise MaxAPIError("network_or_tls_error")
+            return original(chat, *args, **kwargs)
+        with patch.object(self.client, "send", side_effect=send):
+            self.service.retry_leads()
+        with self.service._db() as db:
+            self.assertEqual([row[0] for row in db.execute("SELECT chat_id FROM deliveries")], [300])
+        self.service.retry_leads()
+        with self.service._db() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM deliveries").fetchone()[0], 2)
+
+    def test_legacy_single_dialog_migrates_once_without_losing_receipts(self):
+        with closing(sqlite3.connect(self.service.db_path)) as db:
+            db.execute("CREATE TABLE recipient(id INTEGER PRIMARY KEY CHECK(id=1),chat_id INTEGER,user_id INTEGER)")
+            db.execute("INSERT INTO recipient VALUES(1,100,200)")
+            db.execute("CREATE TABLE deliveries(lead_id INTEGER,chat_id INTEGER,mid TEXT,PRIMARY KEY(lead_id,chat_id))")
+            db.execute("INSERT INTO deliveries VALUES(1,100,'existing-card')")
+            db.commit()
+        self.assertEqual(self.service.get_recipient(), {"chat_id": 100, "user_id": 200})
+        self.service.retry_leads()
+        self.assertEqual(self.client.sent, [])
+        self.service.disconnect(100)
+        self.service._initialized = False
         self.assertIsNone(self.service.get_recipient())
 
     def test_token_rotation_revokes_max_only(self):
@@ -147,7 +194,7 @@ class MaxServiceTest(unittest.TestCase):
             db = sqlite3.connect(copied)
             try:
                 self.assertEqual(db.execute("PRAGMA integrity_check").fetchone()[0], "ok")
-                self.assertEqual(db.execute("SELECT user_id FROM recipient").fetchone()[0], 200)
+                self.assertEqual(db.execute("SELECT user_id FROM recipients").fetchone()[0], 200)
             finally:
                 db.close()
 
@@ -324,10 +371,10 @@ class MaxHTTPTest(unittest.TestCase):
                 self.assertEqual(request("POST", "/api/max/webhook", event, webhook_secret=secret)[0], 200)
                 for _ in range(30):
                     _, _, page = request("GET", "/admin/max", cookie=cookie)
-                    if "Диалог администратора подключён" in page:
+                    if "Подключено диалогов: 1" in page:
                         break
                     time.sleep(.05)
-                self.assertIn("Диалог администратора подключён", page)
+                self.assertIn("Подключено диалогов: 1", page)
                 order = {"name": "Проверка MAX", "phone": "+7 (900) 000-00-00", "source": "cta",
                          "elapsed_ms": 5000, "consent": True,
                          "items": [{"name": "Ирга", "quantity": 2, "price": "1000 ₽"}]}
@@ -347,7 +394,22 @@ class MaxHTTPTest(unittest.TestCase):
                         break
                     time.sleep(.3)
                 self.assertTrue(receipt, "the stored lead was not delivered by the MAX worker")
-                self.assertEqual(request("POST", "/admin/max/disconnect", urlencode({"csrf": csrf}), cookie)[0], 303)
+                status, _, page = request("POST", "/admin/max/connect", urlencode({"csrf": csrf}), cookie)
+                invitation = re.search(r'https://max.ru/garden_test_bot\?start=([^"<]+)', page).group(1)
+                event = {"update_type": "bot_started", "timestamp": 2000, "chat_id": 300,
+                         "user": {"user_id": 400, "name": "<Второй>"}, "payload": invitation}
+                self.assertEqual(request("POST", "/api/max/webhook", json.dumps(event), webhook_secret=secret)[0], 200)
+                for _ in range(40):
+                    page = request("GET", "/admin/max", cookie=cookie)[2]
+                    if "Подключено диалогов: 2" in page:
+                        break
+                    time.sleep(.1)
+                self.assertIn("Подключено диалогов: 2", page)
+                self.assertIn("&lt;Второй&gt;", page)
+                self.assertEqual(request("POST", "/admin/max/disconnect", urlencode({"csrf": "invalid", "chat_id": "100"}), cookie)[0], 403)
+                self.assertEqual(request("POST", "/admin/max/disconnect", urlencode({"csrf": csrf, "chat_id": "100"}), cookie)[0], 303)
+                self.assertIn("Подключено диалогов: 1", request("GET", "/admin/max", cookie=cookie)[2])
+                self.assertEqual(request("POST", "/admin/max/disconnect", urlencode({"csrf": csrf, "chat_id": "300"}), cookie)[0], 303)
                 self.assertIn("Диалог ещё не подключён", request("GET", "/admin/max", cookie=cookie)[2])
             finally:
                 process.terminate()
