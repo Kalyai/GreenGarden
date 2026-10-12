@@ -129,6 +129,15 @@ if docker info >/dev/null 2>&1; then
         "$("${COMPOSE[@]}" ps --format '{{.Ports}}' app 2>/dev/null)"
     check "каталог данных доступен на запись" "ok" \
         "$("${COMPOSE[@]}" exec -T app sh -c 'touch /data/.probe && rm -f /data/.probe && echo ok' 2>/dev/null)"
+    if [ -n "$(env_get MAX_BOT_TOKEN)" ]; then
+        if "${COMPOSE[@]}" exec -T app python backend/max_setup.py check; then
+            ok "MAX API: соединение, TLS и токен"
+        else
+            bad "MAX API" "соединение и токен работают" "см. ошибку выше и MAX.md"
+        fi
+    else
+        skip "MAX API" "MAX_BOT_TOKEN не задан; заявки доступны в админке"
+    fi
 else
     skip "контейнеры" "docker недоступен на этой машине"
 fi
@@ -165,4 +174,4 @@ if [ "$FAIL" -ne 0 ]; then
     echo "Проверки не пройдены. Журналы: docker compose logs --tail=100 app nginx"
     exit 1
 fi
-echo "Сайт отвечает правильно. Осталось проверить руками формы и доставку заявок в Telegram."
+echo "Сайт отвечает правильно. Осталось проверить формы и доставку заявок в MAX (MAX.md)."

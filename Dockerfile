@@ -3,7 +3,7 @@
 # «Зелёный дворик»: один контекст сборки — три стадии.
 #
 #   static — только публичные файлы сайта (источник для COPY, без ОС);
-#   app    — процесс Python: каталог, админка, заявки и Telegram-бот;
+#   app    — процесс Python: каталог, админка, заявки и MAX-бот;
 #   nginx  — раздача статики и TLS-терминация.
 #
 # Оба образа собираются из одного коммита, поэтому HTML, js/main.js и
@@ -60,7 +60,8 @@ WORKDIR /app
 # Статика в образе приложения нужна не для продакшена (её отдаёт nginx),
 # а для HEALTHCHECK и для запуска без nginx — например, при диагностике.
 COPY --from=static /static /app/
-COPY backend/app.py backend/admin.py backend/catalog_store.py /app/backend/
+COPY backend/app.py backend/admin.py backend/catalog_store.py backend/max_bot.py backend/max_setup.py backend/backup_data.py /app/backend/
+COPY backend/certs/ /app/backend/certs/
 COPY legacy-catalog.json /app/legacy-catalog.json
 COPY tools/catalog_taxonomy.py tools/seo_content.py tools/seo_site.py tools/render_legacy_catalog.py /app/tools/
 

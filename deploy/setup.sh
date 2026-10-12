@@ -82,8 +82,9 @@ ask() {
 ask DOMAIN          "Домен сайта"
 ask CERTBOT_EMAIL   "E-mail для Let's Encrypt"
 ask SITE_ADMIN_PASSWORD  "Пароль веб-админки" secret
-ask TELEGRAM_ADMIN_PASSWORD "Пароль Telegram-бота заявок" secret
-ask TELEGRAM_BOT_TOKEN  "Токен бота заявок (@BotFather)"                    secret
+ask MAX_BOT_TOKEN "Токен бота MAX (можно подключить позже)" secret
+ask MAX_BOT_USERNAME "Ник бота MAX без @ (можно подключить позже)"
+[ -n "$(env_get MAX_WEBHOOK_SECRET)" ] || env_set MAX_WEBHOOK_SECRET "$(openssl rand -hex 32)"
 
 require_env DOMAIN CERTBOT_EMAIL
 DOMAIN=$(env_get DOMAIN)
@@ -92,10 +93,8 @@ LOG_DIR=$(env_get LOG_DIR);        LOG_DIR=${LOG_DIR:-/var/log/greengarden/nginx
 BACKUP_DIR=$(env_get BACKUP_DIR);  BACKUP_DIR=${BACKUP_DIR:-/var/backups/greengarden}
 KEY_FILE=$(env_get BACKUP_PASSPHRASE_FILE); KEY_FILE=${KEY_FILE:-/root/.greengarden-backup-key}
 [ -n "$(env_get SITE_ADMIN_PASSWORD)" ] || die "SITE_ADMIN_PASSWORD пуст: вход в админку закрыт"
-[ -n "$(env_get TELEGRAM_ADMIN_PASSWORD)" ] || die "TELEGRAM_ADMIN_PASSWORD пуст: вход в бот закрыт"
-if [ -z "$(env_get TELEGRAM_BOT_TOKEN)" ]; then
-    warn "TELEGRAM_BOT_TOKEN пуст: заявки будут копиться в базе и уйдят в чат,"
-    warn "как только токен появится (их досылает retry_unpushed)."
+if [ -z "$(env_get MAX_BOT_TOKEN)" ]; then
+    warn "MAX_BOT_TOKEN пуст: заявки сохраняются в админке; подключение MAX — по MAX.md"
 fi
 
 # ---------- 2. Пакеты и Docker ----------
@@ -132,7 +131,7 @@ fi
 # Поэтому защита здесь не правилами на 8000, а тем, что в docker-compose.yml
 # опубликованы только 80 и 443 — порт приложения наружу не виден вовсе.
 # DEFAULT_FORWARD_POLICY=ACCEPT обязателен: при DROP контейнеры теряют выход
-# в интернет, и боты не смогут достучаться до api.telegram.org.
+# в интернет, и боты не смогут достучаться до platform-api2.max.ru.
 if command -v ufw >/dev/null 2>&1; then
     sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
     ufw allow OpenSSH >/dev/null
@@ -233,7 +232,7 @@ cat <<EOF
   Сертификат:  продлевается сам в 04:30 и 16:30 (systemctl list-timers)
 
 Что осталось сделать руками (см. DEPLOYMENT.md, раздел «После первого запуска»):
-  1. В Telegram: /start в боте заявок и ввести TELEGRAM_ADMIN_PASSWORD.
+  1. Зарегистрировать webhook MAX по MAX.md и подключить личный диалог через /admin/max.
   2. Войти в веб-админку по адресу /admin с SITE_ADMIN_PASSWORD.
   3. Отправить тестовую заявку с сайта и убедиться, что она пришла в чат.
   4. Настроить выгрузку бэкапов $BACKUP_DIR во внешнее хранилище (S3/Backblaze).

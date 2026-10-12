@@ -17,6 +17,8 @@ backend/local_admin_password.txt
 backend/local_site_password.txt
 backend/local_tg_password.txt
 backend/bot_auth_state.json
+backend/max-bot.sqlite*
+backend/max-local.json
 backend/catalog-overrides.json
 backend/catalog-media/
 *.json.tmp

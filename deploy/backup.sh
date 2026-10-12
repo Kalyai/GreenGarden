@@ -9,6 +9,7 @@
 #
 # Сайт не останавливается: приложение пишет JSON через временный файл и
 # os.replace, поэтому в архив попадает либо старая, либо новая версия целиком.
+# База MAX копируется SQLite backup API, а не чтением активного файла.
 
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -45,7 +46,7 @@ log "Снимаю том data в архив"
 # (не хватает CAP_DAC_OVERRIDE).
 # --no-deps — nginx для бэкапа поднимать не нужно.
 "${COMPOSE[@]}" run --rm --no-deps -T --user 10001:10001 -v "$WORK:/dump" app \
-    tar -C /data -czf /dump/snapshot.tar.gz .
+    python backend/backup_data.py /data /dump/snapshot.tar.gz
 
 OUT="$BACKUP_DIR/greengarden-$STAMP.tar.gz.gpg"
 gpg --batch --yes --symmetric --cipher-algo AES256 \

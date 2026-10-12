@@ -1,6 +1,6 @@
 # «Зелёный дворик» — Docker Compose для одного сервера.
 #
-#   app    — Python-процесс (каталог, админка, заявки и один Telegram-бот). Порт наружу НЕ
+#   app    — Python-процесс (каталог, админка, заявки и MAX-бот). Порт наружу НЕ
 #            публикуется: единственный вход — nginx.
 #   nginx  — TLS, статика, лимиты запросов, проксирование /api/ в app.
 #   certbot— выпуск и продление сертификата Let's Encrypt. Запускается только
@@ -28,14 +28,16 @@ services:
       target: app
     image: greengarden/app:local
     restart: unless-stopped
-    # Реплика строго одна (никаких `docker compose up --scale app=2`):
-    # смещение getUpdates хранится в памяти процесса, и второй экземпляр
-    # начал бы обрабатывать те же обновления Telegram дважды.
+    # Реплика строго одна: база заявок хранится в памяти с записью в том.
     environment:
-      # Раздельные секреты: веб-админка и бот заявок.
+      # MAX подключается одноразовой ссылкой из веб-админки.
       SITE_ADMIN_PASSWORD: ${SITE_ADMIN_PASSWORD:?задайте SITE_ADMIN_PASSWORD в .env}
-      TELEGRAM_ADMIN_PASSWORD: ${TELEGRAM_ADMIN_PASSWORD:?задайте TELEGRAM_ADMIN_PASSWORD в .env}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-}
+      MAX_WEBHOOK_SECRET: ${MAX_WEBHOOK_SECRET:-}
+      MAX_WEBHOOK_URL: https://${DOMAIN:?задайте DOMAIN в .env}/api/max/webhook
+      MAX_CA_FILE: ${MAX_CA_FILE:-/app/backend/certs/max-ca.pem}
+      MAX_TIMEOUT: ${MAX_TIMEOUT:-10}
       # Сеть. 0.0.0.0 — только внутри сети контейнера, порт не публикуется.
       # TRUSTED_PROXIES обязан совпадать с подсетью compose: иначе приложение
       # не поверит X-Forwarded-For от nginx и будет видеть один IP на всех
@@ -55,7 +57,6 @@ services:
       LEAD_LIMIT_PER_MIN: ${LEAD_LIMIT_PER_MIN:-5}
       MIN_FILL_SECONDS: ${MIN_FILL_SECONDS:-0.5}
       MAX_CONCURRENCY: ${MAX_CONCURRENCY:-64}
-      TG_TIMEOUT: ${TG_TIMEOUT:-10}
       LEAD_ALERT_THRESHOLD: ${LEAD_ALERT_THRESHOLD:-100}
     volumes:
       # Заявки и состояния чатов. Том именованный, а не bind-mount: данные

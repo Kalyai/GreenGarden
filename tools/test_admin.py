@@ -29,8 +29,7 @@ class AdminHTTPTest(unittest.TestCase):
             cls.port = sock.getsockname()[1]
         env = os.environ.copy()
         env.update({"SITE_PORT": str(cls.port), "SITE_HOST": "127.0.0.1", "DATA_DIR": cls.tmp.name,
-                    "SITE_ADMIN_PASSWORD": cls.password, "TELEGRAM_ADMIN_PASSWORD": cls.bot_password,
-                    "TELEGRAM_BOT_TOKEN": "", "PUBLIC_HTTPS": "0"})
+                    "SITE_ADMIN_PASSWORD": cls.password, "MAX_BOT_TOKEN": "", "PUBLIC_HTTPS": "0"})
         env.pop("ADMIN_PASSWORD", None)
         cls.process = subprocess.Popen([sys.executable, "-u", "backend/app.py"], cwd=ROOT, env=env,
                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -86,12 +85,6 @@ class AdminHTTPTest(unittest.TestCase):
         status, _, body = self.request("POST", "/admin/login", urlencode({"nonce": nonce, "password": self.bot_password}))
         self.assertEqual(status, 200)
         self.assertIn("Неверный пароль", body)
-        env = os.environ.copy()
-        env.update({"SITE_ADMIN_PASSWORD": self.password, "TELEGRAM_ADMIN_PASSWORD": self.bot_password,
-                    "DATA_DIR": self.tmp.name, "TELEGRAM_BOT_TOKEN": ""})
-        result = subprocess.run([sys.executable, "-c", "import sys;sys.path.insert(0,'backend');import app;print(app.bot_password_valid(app.BOT_PASSWORD),app.bot_password_valid(app.SITE_PASSWORD))"],
-                                cwd=ROOT, env=env, text=True, capture_output=True, check=True)
-        self.assertIn("True False", result.stdout)
         self.login()  # clear the failed-login counter before the throttle test
 
     def test_in_app_browser_null_origin(self):
@@ -106,72 +99,17 @@ class AdminHTTPTest(unittest.TestCase):
         self.assertEqual(status, 303)
         self.assertEqual(headers["Location"], "/admin")
 
-    def test_bot_password_rotation_revokes_chats(self):
-        with tempfile.TemporaryDirectory() as folder:
-            data_file = Path(folder) / "chats.json"
-            record = {"bot": "leads", "chat_id": 123, "activated": True, "blocked": False,
-                      "attempts": 0, "sent_ids": [], "transient_ids": []}
-            data_file.write_text(json.dumps([record]))
-            env = os.environ.copy()
-            env.update({"SITE_ADMIN_PASSWORD": self.password, "DATA_DIR": folder,
-                        "TELEGRAM_BOT_TOKEN": ""})
-            script = "import sys;sys.path.insert(0,'backend');import app;app.invalidate_bot_chats_on_password_change()"
-            env["TELEGRAM_ADMIN_PASSWORD"] = self.bot_password
-            subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env, check=True, capture_output=True)
-            self.assertFalse(json.loads(data_file.read_text())[0]["activated"])
-            record["activated"] = True
-            data_file.write_text(json.dumps([record]))
-            subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env, check=True, capture_output=True)
-            self.assertTrue(json.loads(data_file.read_text())[0]["activated"])
-            env["TELEGRAM_ADMIN_PASSWORD"] = secrets.token_urlsafe(24)
-            subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env, check=True, capture_output=True)
-            self.assertFalse(json.loads(data_file.read_text())[0]["activated"])
-
-    def test_bot_start_does_not_reset_failed_attempts(self):
-        with tempfile.TemporaryDirectory() as folder:
-            env = os.environ.copy()
-            env.update({"SITE_ADMIN_PASSWORD": self.password, "TELEGRAM_ADMIN_PASSWORD": self.bot_password,
-                        "DATA_DIR": folder, "TELEGRAM_BOT_TOKEN": ""})
-            script = '''import sys
-sys.path.insert(0, 'backend')
-import app
-class FakeBot:
-    kind = 'leads'
-    def clear_transient(self, *args): pass
-    def delete_message(self, *args): pass
-    def send_auth(self, *args): pass
-rec = {'bot':'leads','chat_id':123,'attempts':0,'activated':False,'blocked':False,'state':None,'transient_ids':[]}
-app.CHATS.append(rec)
-bot = FakeBot()
-app.password_step(bot, rec, 'wrong', 123)
-app.password_step(bot, rec, '/start', 123)
-print(rec['attempts'])'''
-            result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env,
-                                    check=True, capture_output=True, text=True)
-            self.assertEqual(result.stdout.strip(), "1")
-
-    def test_bot_start_recreates_stale_auth_prompt(self):
-        with tempfile.TemporaryDirectory() as folder:
-            env = os.environ.copy()
-            env.update({"SITE_ADMIN_PASSWORD": self.password, "TELEGRAM_ADMIN_PASSWORD": self.bot_password,
-                        "DATA_DIR": folder, "TELEGRAM_BOT_TOKEN": ""})
-            script = '''import sys
-sys.path.insert(0, 'backend')
-import app
-class FakeBot:
-    kind = 'leads'
-    def clear_transient(self, *args): pass
-    def delete_message(self, chat_id, message_id):
-        print('deleted', message_id)
-    def send_auth(self, rec, chat_id, attempts_left):
-        print('fresh', rec.get('auth_msg'), rec.get('auth_text'), attempts_left)
-rec = {'bot':'leads','chat_id':123,'attempts':0,'activated':False,'blocked':False,
-       'state':None,'transient_ids':[],'auth_msg':42,'auth_text':'old prompt'}
-app.CHATS.append(rec)
-app.password_step(FakeBot(), rec, '/start', 123)'''
-            result = subprocess.run([sys.executable, "-c", script], cwd=ROOT, env=env,
-                                    check=True, capture_output=True, text=True)
-            self.assertEqual(result.stdout.strip().splitlines(), ["deleted 42", "fresh None None 5"])
+    def test_max_page_requires_login_and_csrf(self):
+        status, _, body = self.request("GET", "/admin/max")
+        self.assertEqual(status, 200)
+        self.assertIn('type="password"', body)
+        cookie = self.login()
+        status, _, body = self.request("GET", "/admin/max", cookie=cookie)
+        self.assertEqual(status, 200)
+        self.assertIn("Бот MAX", body)
+        self.assertIn("Диалог ещё не подключён", body)
+        status, _, _ = self.request("POST", "/admin/max/disconnect", "csrf=wrong", cookie=cookie)
+        self.assertEqual(status, 403)
 
     def test_auth_edit_persistence_and_public_render(self):
         path = "/catalog/abrikos-chempion-severa"
@@ -226,7 +164,7 @@ app.password_step(FakeBot(), rec, '/start', 123)'''
         self.assertEqual(status, 303)
         status, _, page = self.request("GET", "/admin", cookie=cookie)
         self.assertIn('type="password"', page)
-        for secret_file in ("local_site_password.txt", "local_tg_password.txt", "bot_auth_state.json"):
+        for secret_file in ("local_site_password.txt", "local_tg_password.txt", "bot_auth_state.json", "max-bot.sqlite"):
             status, _, _ = self.request("GET", "/backend/" + secret_file)
             self.assertEqual(status, 404)
 

@@ -107,7 +107,7 @@ def parse_fields(data, old):
 
 
 class Admin:
-    def __init__(self, store, password, data_dir, leads, leads_lock, save_leads, public_https):
+    def __init__(self, store, password, data_dir, leads, leads_lock, save_leads, public_https, max_bot=None):
         self.store = store
         self.password = password
         self.data_dir = Path(data_dir)
@@ -115,6 +115,7 @@ class Admin:
         self.leads_lock = leads_lock
         self.save_leads = save_leads
         self.public_https = public_https
+        self.max_bot = max_bot
         self.sessions = {}
         self.nonces = {}
         self.failures = {}
@@ -209,7 +210,7 @@ class Admin:
         handler.end_headers()
 
     def _shell(self, title, body, session=None):
-        nav = ('<nav class="admin-nav"><a href="/admin">Товары</a><a href="/admin/leads">Заявки</a><a href="/catalog" target="_blank" rel="noopener">Открыть каталог</a>'
+        nav = ('<nav class="admin-nav"><a href="/admin">Товары</a><a href="/admin/leads">Заявки</a><a href="/admin/max">MAX</a><a href="/catalog" target="_blank" rel="noopener">Открыть каталог</a>'
                f'<form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="{E(session["csrf"])}"><button type="submit">Выйти</button></form></nav>') if session else ""
         return f'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{E(title)} · Админка Зелёный дворик</title><link rel="icon" href="/img/logo.png"><link rel="stylesheet" href="/css/admin.css?v=1"></head><body><header class="admin-header"><div><a class="admin-brand" href="/admin">Зелёный дворик <span>Админка</span></a>{nav}</div></header><main class="admin-main">{body}</main></body></html>'''
 
@@ -233,6 +234,8 @@ class Admin:
             return self._products(handler, session, query)
         if path == "/admin/leads":
             return self._leads(handler, session)
+        if path == "/admin/max" and self.max_bot:
+            return self._max(handler, session)
         match = re.fullmatch(r"/admin/products/([a-z0-9-]+)", path)
         if match:
             return self._edit(handler, session, match.group(1))
@@ -258,6 +261,11 @@ class Admin:
                     self.sessions.pop(hashlib.sha256(self._cookie(handler).encode()).hexdigest(), None)
                 flags = "; Secure" if self.public_https else ""
                 return self._redirect(handler, "/admin", f"{self.cookie_name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict{flags}")
+            if path == "/admin/max/connect" and self.max_bot:
+                return self._max(handler, session, self.max_bot.create_link())
+            if path == "/admin/max/disconnect" and self.max_bot:
+                self.max_bot.disconnect()
+                return self._redirect(handler, "/admin/max")
             match = re.fullmatch(r"/admin/products/([a-z0-9-]+)", path)
             if match:
                 slug = match.group(1)
@@ -366,8 +374,19 @@ class Admin:
             items = ''.join(f'<li>{E(x.get("name", ""))} · {E(x.get("quantity", ""))} шт. · {E(x.get("price", ""))}</li>' for x in lead.get("items", []))
             choices = ''.join(f'<option value="{k}"{" selected" if lead.get("status") == k else ""}>{label}</option>' for k, label in opts)
             cards.append(f'''<article class="admin-panel admin-lead"><div><h2>Заявка №{lead['id']}</h2><small>{E(lead.get('ts',''))} · {E(lead.get('source',''))}</small><p><strong>{E(lead.get('name',''))}</strong> · <a href="tel:{E(lead.get('phone',''))}">{E(lead.get('phone',''))}</a></p>{f'<p>{E(lead.get("comment",""))}</p>' if lead.get('comment') else ''}{f'<ul>{items}</ul>' if items else ''}</div><form method="post" action="/admin/leads/{lead['id']}/status"><input type="hidden" name="csrf" value="{E(session['csrf'])}"><label>Статус<select name="status">{choices}</select></label><button type="submit">Сохранить</button></form></article>''')
-        body = f'<p class="admin-eyebrow">Заявки с сайта</p><h1>Заявки <span>{len(rows)}</span></h1><p>Новые заявки по-прежнему поступают в Telegram-бот заявок. Статус можно поменять здесь или в боте.</p>{"".join(cards) or "<p>Заявок пока нет.</p>"}'
+        body = f'<p class="admin-eyebrow">Заявки с сайта</p><h1>Заявки <span>{len(rows)}</span></h1><p>После <a href="/admin/max">подключения MAX</a> новые заявки поступают в бот. Статус можно поменять здесь или в боте.</p>{"".join(cards) or "<p>Заявок пока нет.</p>"}'
         self._send(handler, 200, self._shell("Заявки", body, session))
+
+    def _max(self, handler, session, link=""):
+        status = self.max_bot.status()
+        configured = "Настройки заданы" if status["configured"] else "Сначала задайте настройки MAX на сервере (MAX.md)"
+        connection = "Диалог администратора подключён" if status["connected"] else "Диалог ещё не подключён"
+        csrf = f'<input type="hidden" name="csrf" value="{E(session["csrf"])}">'
+        note = '' if status['webhook_ready'] else '<p>На локальном сайте проверяется соединение с API. Подключите диалог на рабочем сайте после настройки webhook по MAX.md.</p>'
+        invitation = (f'<section class="admin-panel"><h2>Одноразовое подключение</h2><p>Откройте ссылку в своём MAX и нажмите «Начать». Она действует 10 минут и используется один раз. Не пересылайте её другим людям.</p>'
+                      f'<a class="admin-brand" href="{E(link)}" rel="noreferrer" referrerpolicy="no-referrer">Подключить мой MAX</a></section>') if link else ""
+        body = f'''<p class="admin-eyebrow">Уведомления о заявках</p><h1>Бот MAX</h1><section class="admin-panel"><p>{E(configured)}</p><p>{E(connection)}</p><p>Соединение: {E(status['network'])}</p><p>Событий в очереди: {status['pending_events']}</p><p>Подключается один личный диалог. Пароль от сайта в мессенджер вводить не нужно.</p>{note}<form method="post" action="/admin/max/connect">{csrf}<button type="submit"{' disabled' if not (status['configured'] and status['webhook_ready']) else ''}>Создать ссылку подключения</button></form><form method="post" action="/admin/max/disconnect">{csrf}<button type="submit">Отключить MAX</button></form></section>{invitation}'''
+        return self._send(handler, 200, self._shell("MAX", body, session))
 
     def _upload(self, handler, slug, session):
         if not self.store.get(slug):

@@ -18,7 +18,10 @@ backend/catalog-overrides.json
 backend/catalog-media/
 *.json.tmp
 *.pem
+!backend/certs/max-ca.pem
 *.key
+backend/max-bot.sqlite*
+backend/max-local.json
 
 # --- Служебные каталоги ----------------------------------------------------
 .git

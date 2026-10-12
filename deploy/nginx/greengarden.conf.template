@@ -28,6 +28,7 @@
 limit_req_zone  $binary_remote_addr zone=per_ip:10m  rate=30r/m;
 limit_req_zone  $binary_remote_addr zone=assets:10m  rate=300r/m;
 limit_req_zone  $binary_remote_addr zone=api:10m     rate=30r/m;
+limit_req_zone  $binary_remote_addr zone=max_webhook:1m rate=10r/s;
 limit_conn_zone $binary_remote_addr zone=per_conn:10m;
 
 # Штатный ответ nginx на превышение — 503 «Service Unavailable», что выглядит
@@ -150,6 +151,13 @@ server {
 
     # API приложения: приём заявок. Заголовки безопасности здесь ставит
     # backend/app.py, поэтому сниппет не подключается.
+    location = /api/max/webhook {
+        limit_req zone=max_webhook burst=50 nodelay;
+        client_max_body_size 128k;
+        include /etc/nginx/snippets/proxy-app.conf;
+        access_log off;
+    }
+
     location /api/ {
         limit_req zone=api burst=10 nodelay;
         # Резолвер Docker и переменная в proxy_pass обязательны. С именем,

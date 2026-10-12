@@ -13,7 +13,7 @@ TLS терминируется на nginx, заявки не покидают с
 
 ```
 посетитель ──HTTPS──> nginx :443 ──┬── статика (вшита в образ nginx)
-                                   └── /api/ ──> app :8000 ──> api.telegram.org
+                                   └── /api/ ──> app :8000 ──> platform-api2.max.ru
                                      (только внутри сети Docker, наружу не виден)
 
 Let's Encrypt ──HTTP :80──> nginx ──> том certbot-www (проверки домена)
@@ -22,7 +22,7 @@ Let's Encrypt ──HTTP :80──> nginx ──> том certbot-www (прове
 | Контейнер | Что делает | Что опубликовано наружу |
 |---|---|---|
 | `nginx` | TLS, раздача страниц и изображений, лимиты запросов, проксирование `/api/` | `80`, `443` |
-| `app` | `backend/app.py`: каталог, веб-админка, приём заявок и один Telegram-бот | ничего |
+| `app` | `backend/app.py`: каталог, веб-админка, приём заявок и MAX-бот | ничего |
 | `certbot` | выпуск и продление сертификата; запускается только по требованию | ничего |
 
 | Том | Содержимое |
@@ -42,7 +42,7 @@ Let's Encrypt ──HTTP :80──> nginx ──> том certbot-www (прове
 - Сервер: 1 vCPU, 1 ГБ ОЗУ, 10 ГБ диска, Ubuntu 22.04/24.04 или Debian 12.
 - Домен `green-courtyard.space` с **A-записью на IP сервера**.
 - Доступ по SSH и права `sudo`.
-- Токен бота заявок от @BotFather.
+- Опубликованный бот MAX и его токен (см. MAX.md).
 - Docker ставить вручную не нужно — `deploy/setup.sh` поставит сам.
 
 Проверка DNS перед началом (иначе сертификат не выпустится):
@@ -82,8 +82,9 @@ nano .env
 | `DOMAIN` | уже заполнен: `green-courtyard.space`; проверьте, что это нужный домен |
 | `CERTBOT_EMAIL` | ваша почта для уведомлений Let's Encrypt |
 | `SITE_ADMIN_PASSWORD` | придумайте: пароль веб-админки |
-| `TELEGRAM_ADMIN_PASSWORD` | придумайте: отдельный пароль бота заявок |
-| `TELEGRAM_BOT_TOKEN` | @BotFather → токен бота заявок |
+| `MAX_BOT_TOKEN` | токен опубликованного бота MAX |
+| `MAX_BOT_USERNAME` | ник бота без @ |
+| `MAX_WEBHOOK_SECRET` | случайная строка: `openssl rand -hex 32` |
 
 Если на VPS уже есть `.env`, обновление репозитория **не меняет** его.
 Проверьте `DOMAIN=green-courtyard.space` и действующий адрес почты в
@@ -97,7 +98,7 @@ nano .env
 - значения **без кавычек и без символа `#`** (всё после `#` считается комментарием);
 - файл не попадает в git (`.gitignore`) и в образы (`.dockerignore`);
 - `SITE_ADMIN_PASSWORD` вводят только на странице `/admin`;
-  `TELEGRAM_ADMIN_PASSWORD` — только в боте при первом `/start`.
+  MAX подключается одноразовой ссылкой из `/admin/max`, без ввода пароля в мессенджере.
 
 `deploy/setup.sh` сам спросит всё, что осталось пустым (ввод пароля и токенов
 не отображается на экране), — так что можно просто запустить его и отвечать.
@@ -118,7 +119,7 @@ sudo bash deploy/setup.sh
 1. установка Docker CE и compose-плагина из официального репозитория;
 2. заполнение пустых значений в `.env`, права `600`;
 3. `ufw`: открыты только 22, 80, 443 (`DEFAULT_FORWARD_POLICY=ACCEPT`, иначе
-   контейнеры теряют выход в интернет и боты не достучатся до Telegram);
+   контейнеры теряют выход в интернет и бот не достучится до MAX);
 4. `fail2ban`: джейлы `sshd` и `nginx-limit-req`, `logrotate` для журналов nginx;
 5. каталог бэкапов `0700` и файл парольной фразы `0600` для gpg;
 6. первый сертификат Let's Encrypt (режим `standalone`, пока nginx не слушает 80);
@@ -132,12 +133,11 @@ sudo bash deploy/setup.sh
 
 ## 6. Шаг 4. После первого запуска
 
-1. **Подключите бота заявок.** В Telegram откройте бота заявок → `/start` → введите
-   `TELEGRAM_ADMIN_PASSWORD`. Без этого заявки копятся в
-   базе и не приходят в чат (они будут досланы автоматически после активации).
-   Веб-админка доступна по `/admin` с `SITE_ADMIN_PASSWORD` без ввода логина.
+1. **Подключите MAX по [MAX.md](MAX.md).** Проверьте API и зарегистрируйте
+   webhook командой `docker compose exec -T app python backend/max_setup.py subscribe`.
+   Войдите в `/admin` и подключите личный диалог в разделе MAX.
 2. **Отправьте тестовую заявку с сайта** (форма «Заказать звонок» и заказ из
-   корзины) и убедитесь, что карточка пришла в Telegram с составом и количеством.
+   корзины) и убедитесь, что карточка пришла в MAX с составом и количеством.
 3. **Прогоните проверки:**
    ```bash
    bash deploy/verify.sh
@@ -201,8 +201,8 @@ bash deploy/update.sh
 - Данные не затрагиваются: `leads.json` и `chats.json` живут в именованном томе.
 - Правки товаров и загруженные через админку фото также хранятся в томе `data`.
   Не запускайте `docker compose down -v`: флаг `-v` удалит том с данными.
-- Один Telegram-токен не должен одновременно опрашиваться локальным и серверным
-  экземплярами приложения. Перед включением бота на VPS остановите локальный.
+- Webhook MAX регистрируется только на рабочий HTTPS-домен. Локально MAX
+  не опрашивается: входящие события обрабатывает сервер, указанный в подписке.
 - Откат: `git checkout <прежний коммит> && bash deploy/update.sh --no-pull`.
 - После выкладки следите в журнале за событием `legacy_client`: его всплеск
   означает, что часть посетителей всё ещё работает со старой версией `main.js`.
@@ -216,7 +216,7 @@ bash deploy/update.sh
 | Событие | О чём говорит |
 |---|---|
 | `lead_anomaly` | всплеск заявок (порог `LEAD_ALERT_THRESHOLD`) — спам или атака |
-| `bot_login_blocked` | пять неверных паролей — кто-то подбирает доступ к боту |
+| `max_bot` | подключение MAX, повторы событий и ошибок доставки |
 | `path_denied` | попытка прочитать служебные файлы |
 | `rate_limited` | клиент упёрся в лимит заявок |
 | `honeypot_hit`, `too_fast_submit` | отсеянные автоматические отправки |
@@ -241,12 +241,12 @@ docker compose logs --since 24h app | grep -E 'security|lead_anomaly|blocked' | 
 |---|---|
 | Сайт не открывается, `curl` молчит | `docker compose ps` — поднят ли nginx; `ufw status`; открыты ли 80/443 у хостера |
 | Ошибка сертификата в браузере | `sudo bash deploy/renew-cert.sh`; `docker compose logs certbot`; A-запись домена |
-| Формы «спасибо», а заявок в Telegram нет | бот не активирован (`/start` + пароль) или пустой `TELEGRAM_BOT_TOKEN`; `docker compose logs app \| grep bot` |
-| Заявки есть в базе, но не приходят в чат | они досылаются автоматически (`retry_unpushed`) при следующем опросе Telegram; проверьте доступ контейнера в интернет |
+| Формы «спасибо», а заявок в MAX нет | проверьте /admin/max и `python backend/max_setup.py check` в app; см. MAX.md |
+| Заявки есть в базе, но не приходят в чат | проверьте токен, подписку webhook и привязку диалога; отправка повторяется автоматически |
 | `502`/`504` на `/api/` | `docker compose ps app`, `docker compose logs app` — приложение не поднялось или не прошло `ensure_data_dir` |
 | `429` у реальных посетителей | лимиты: `LEAD_LIMIT_PER_MIN` в `.env` и `zone=api`/`zone=per_ip` в шаблоне nginx. Для офиса за NAT мягче меняют оба места |
 | Контейнер `app` в цикле перезапуска | `docker compose logs app` — проверьте права на том и оба пароля в `.env` |
-| Бот отвечает «Вход недоступен» | `TELEGRAM_ADMIN_PASSWORD` пуст в `.env`: заполните и `docker compose up -d` |
+| MAX не подключён | настройте переменные MAX и одноразовую ссылку по MAX.md |
 | Подсеть `172.28.0.0/24` занята | смените `APP_SUBNET` в `.env` и пересоздайте сеть: `docker compose down && docker compose up -d` |
 | После пересборки nginx не видит app | не должно случаться: в конфиге `resolver 127.0.0.11` и переменная в `proxy_pass`. Если всё же — `docker compose restart nginx` |
 
@@ -272,7 +272,7 @@ docker compose logs --since 24h app | grep -E 'security|lead_anomaly|blocked' | 
 
 - [ ] внешняя копия бэкапов (S3/Backblaze) и **проверенное** восстановление;
 - [ ] автообновления ОС: `apt install unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades`;
-- [ ] мониторинг с алертами на `lead_anomaly`, `bot_login_blocked`, всплеск `path_denied`;
+- [ ] мониторинг с алертами на ошибки `max_bot`, всплеск `path_denied`;
 - [ ] ротация токенов, если репозиторий публиковался;
 - [ ] SSH только по ключам: `PasswordAuthentication no` в `/etc/ssh/sshd_config`;
 - [ ] `docker compose logs app | grep data_dir_unwritable` — пусто.
@@ -285,14 +285,10 @@ docker compose logs --since 24h app | grep -E 'security|lead_anomaly|blocked' | 
 python3 backend/app.py          # http://127.0.0.1:8000
 ```
 
-Приложение слушает `127.0.0.1`, состояние пишет в `backend/leads.json` и
-`backend/chats.json`, токен бота берёт из `backend/bot_token.txt`.
-Для входа в `/admin` задайте `SITE_ADMIN_PASSWORD`, для бота —
-`TELEGRAM_ADMIN_PASSWORD`. При локальной разработке можно создать закрытые
-файлы `backend/local_site_password.txt` и `backend/local_tg_password.txt`
-с правами `0600`: приложение использует их, если переменные не заданы.
-
-Проверить сборку образов локально:
+Приложение слушает `127.0.0.1`, заявки пишет в `backend/leads.json`.
+Локальные настройки MAX хранятся в `backend/max-local.json` с правами 0600.
+Для входа в `/admin` задайте `SITE_ADMIN_PASSWORD` или закрытый файл
+`backend/local_site_password.txt`. MAX настраивается отдельно по MAX.md.
 
 ```bash
 docker compose config                       # валидность compose-файла

@@ -24,7 +24,7 @@ dev: ## Запустить сайт локально: python3 backend/app.py (п
 	python3 backend/app.py
 
 lint: ## Проверить синтаксис Python-файлов
-	python3 -m py_compile backend/app.py tools/*.py
+	python3 -m py_compile backend/*.py tools/*.py
 
 # ---------- Сервер ----------
 
