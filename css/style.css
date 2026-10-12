@@ -1,3 +1,4 @@
+@import "./fonts.css";
 /* ============================================================
    «Зелёный дворик» — питомник растений
    Дизайн-система: Nature & Premium
@@ -136,7 +137,7 @@ svg { display: block; }
 
 .btn--beige {
   background: var(--color-accent-soft);
-  color: var(--text-btn-primary);
+  color: #2D5A27;
 }
 .btn--beige:hover {
   background: var(--color-accent-light);
@@ -609,7 +610,7 @@ svg { display: block; }
 .hero__tab.is-active {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: var(--text-inverse-body);
+  color: #222B1F;
 }
 
 .hero__nav {
@@ -1425,7 +1426,7 @@ svg { display: block; }
   font-size: 13px;
   font-weight: 500;
   letter-spacing: .3px;
-  color: var(--text-inverse-disabled);
+  color: rgba(255, 255, 255, .72);
 }
 .footer__legal {
   display: flex;
@@ -1710,3 +1711,10 @@ body.modal-open { overflow: hidden; }
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Keep phone labels unchanged while increasing their clickable areas. */
+.header__phones a{min-height:24px;display:inline-flex;align-items:center}
+
+.hero__slide picture{display:contents}
+
+.card__media picture{display:contents}

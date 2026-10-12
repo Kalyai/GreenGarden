@@ -41,7 +41,7 @@
 .seo-faq summary { cursor: pointer; font-weight: 600; }
 .seo-faq p { max-width: 820px; margin-top: 14px; color: #50584a; }
 .seo-product { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 42px; margin-top: 32px; }
-.seo-product__image > img { display: block; width: 100%; height: auto; max-height: 620px; object-fit: contain; border-radius: 18px; background: #eeeede; }
+.seo-product__image img { display: block; width: 100%; height: auto; max-height: 620px; object-fit: contain; border-radius: 18px; background: #eeeede; }
 .seo-price { font-size: clamp(25px,3vw,36px); font-weight: 700; }
 .seo-stock { font-weight: 600; color: #4a5a40; }
 .seo-product__intro { margin-top: 24px; color: #4c5547; }
@@ -61,3 +61,8 @@
 @media(max-width:720px) { .seo-product { grid-template-columns:1fr; gap:24px; } .seo-page .header__inner { flex-wrap:wrap; height:auto; min-height:72px; padding-block:10px; gap:10px; } .seo-nav { width:100%; justify-content:space-between; gap:10px; font-size:13px; } .seo-main { padding-top:28px; } .seo-page .header { height:auto; } .seo-footer { grid-template-columns:1fr; } }
 @media(max-width:520px) { .seo-grid { grid-template-columns:1fr; } .seo-lead { font-size:16px; } .seo-page .product-specs th,.seo-page .product-specs td { padding:12px 6px; font-size:13px; } .seo-page .product-specs th { width:45%; } }
 @media(max-width:460px) { .seo-page .logo__text { display:flex; } }
+
+/* Readable text against the existing cream and green surfaces. */
+.seo-page{color:#50584a}.seo-page .logo__text small{color:#626b5b}.seo-nav a{color:#50584a;display:inline-flex;align-items:center;min-height:24px}.seo-page .section__eyebrow{color:#85613e}.seo-page .product-specs td,.seo-page .seo-faq summary{color:#50584a}.seo-callout>p{color:#46513e}
+
+.seo-product__image>picture{display:block}

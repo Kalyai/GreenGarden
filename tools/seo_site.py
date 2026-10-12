@@ -16,7 +16,7 @@ from seo_content import COLLECTIONS, GUIDES
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN = 'https://green-courtyard.space'
 E = html.escape
-CSS_VERSION = '2'
+CSS_VERSION = '3'
 COLLECTION_BY_SLUG = {c[0]: c for c in COLLECTIONS}
 GROUP_COLLECTION = {c[1]: c for c in COLLECTIONS if c[1] and c[2] is None}
 SUBGROUP_COLLECTION = {(c[1], c[2]): c for c in COLLECTIONS if c[2] not in (None, 'large')}
@@ -100,7 +100,19 @@ def image_html(p, hero=False):
         else:
             src = p['seo_thumb']
             width, height = p['seo_thumb_dimensions']
-    return f'<img src="{E(src)}" alt="{E(clean(p["name"]))}" width="{width}" height="{height}"{attrs}>'
+    image = f'<img src="{E(src)}" alt="{E(clean(p["name"]))}" width="{width}" height="{height}"{attrs}>'
+    # Optional AVIF alternatives preserve WebP as a fallback, including admin uploads.
+    if hero and src.startswith('/img/optimized/'):
+        full = ROOT / src.lstrip('/')
+        avif = full.with_suffix('.avif')
+        if avif.is_file():
+            candidates = []
+            mid = full.with_name(full.name.replace('-1000.webp', '-720.avif'))
+            if width > 720 and mid.is_file():
+                candidates.append('/' + mid.relative_to(ROOT).as_posix() + ' 720w')
+            candidates.append('/' + avif.relative_to(ROOT).as_posix() + f' {width}w')
+            image = f'<picture><source type="image/avif" srcset="{E(", ".join(candidates))}" sizes="(max-width: 720px) calc(100vw - 40px), 560px">{image}</picture>'
+    return image
 
 
 def image_dimensions(path):
@@ -182,17 +194,17 @@ def shell(title, meta, path, content, nodes=None, image='/img/services-planting.
 <title>{E(title)}</title><meta name="description" content="{E(meta)}"><link rel="canonical" href="{canonical}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <meta property="og:type" content="{'product' if script else 'website'}"><meta property="og:locale" content="ru_RU"><meta property="og:site_name" content="Зелёный дворик"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(meta)}"><meta property="og:url" content="{canonical}"><meta property="og:image" content="{E(absolute_image)}"><meta property="og:image:alt" content="{E(title.split(' — ')[0])}">
-<link rel="icon" href="/img/logo.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=41"><link rel="stylesheet" href="/css/seo.css?v={CSS_VERSION}">{jsonld(graph)}</head>
+<link rel="icon" href="/img/logo.png">
+<link rel="stylesheet" href="/css/style.min.css?v=42"><link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">{jsonld(graph)}<link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-latin-ext.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-cyrillic.woff2" as="font" type="font/woff2" crossorigin></head>
 <body class="seo-page"><a class="seo-skip" href="#content">Перейти к содержанию</a>
-<header class="header"><div class="container header__inner"><a class="logo" href="/" aria-label="Зелёный дворик — на главную"><img class="logo__img" src="/img/logo.png" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/services">Услуги</a><a href="/guides">Советы</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
+<header class="header"><div class="container header__inner"><a class="logo" href="/" aria-label="Зелёный дворик питомник растений — на главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/services">Услуги</a><a href="/guides">Советы</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
 <main id="content" class="container seo-main">{content}</main>
 <footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Советы по выбору</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
-{'<script src="/js/product.js?v=1"></script>' if script else ''}</body></html>'''
+{'<script src="/js/product.min.js?v=2"></script>' if script else ''}</body></html>'''
 
 
 def tile(p):
-    return f'''<article class="seo-tile"><a class="seo-tile__photo" href="/catalog/{E(p['slug'])}">{image_html(p)}</a><div class="seo-tile__body"><h3><a href="/catalog/{E(p['slug'])}">{E(clean(p['name']))}</a></h3><p>{E(summary(p))}</p><p class="seo-stock">{stock(p)}</p><strong>{E(price(p))}</strong><a class="seo-text-link" href="/catalog/{E(p['slug'])}">Характеристики и заказ →</a></div></article>'''
+    return f'''<article class="seo-tile"><a class="seo-tile__photo" href="/catalog/{E(p['slug'])}">{image_html(p)}</a><div class="seo-tile__body"><h3><a href="/catalog/{E(p['slug'])}">{E(clean(p['name']))}</a></h3><p>{E(summary(p))}</p><p class="seo-stock">{stock(p)}</p><strong>{E(price(p))}</strong><a class="seo-text-link" href="/catalog/{E(p['slug'])}" aria-label="Характеристики и заказ: {E(clean(p['name']))}">Характеристики и заказ →</a></div></article>'''
 
 
 def selection_link(c):
@@ -283,7 +295,7 @@ def guide_page(g):
 
 
 def enhance_catalog(source, products):
-    source=source.replace('</head>',f'<link rel="stylesheet" href="/css/seo.css?v={CSS_VERSION}">\n</head>')
+    source=source.replace('</head>',f'<link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">\n</head>')
     source=source.replace('<title>Каталог растений — Зелёный дворик | Плодовые, ягодные, хвойные и декоративные растения</title>','<title>Каталог саженцев и крупномеров в Мытищах — Зелёный дворик</title>')
     block='<nav class="seo-links seo-catalog-links" aria-label="Подборки и советы"><a href="/collections/golubika">Голубика</a><a href="/collections/irga">Ирга</a><a href="/collections/derevo-sad">Деревья-сад</a><a href="/collections/krupnomery">Крупномеры</a><a href="/guides">Советы по выбору</a><a href="/delivery">Доставка и самовывоз</a></nav>'
     source=source.replace('        <div class="catalog__filters"',block+'\n        <div class="catalog__filters"',1)

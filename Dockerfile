@@ -30,6 +30,7 @@ COPY sitemap.xml robots.txt /static/
 COPY css/   /static/css/
 COPY img/   /static/img/
 COPY js/    /static/js/
+COPY fonts/ /static/fonts/
 
 # ---------- 2. Приложение ----------
 # Версия Python — как в requirements.txt («проверено на Python 3.14»).

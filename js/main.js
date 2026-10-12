@@ -605,14 +605,38 @@
     let current = 0;
     let timer = null;
 
-    const goTo = (index) => {
-      current = (index + slides.length) % slides.length;
+    let requested = 0;
+    const loadSlide = (index) => {
+      const img = slides[index].querySelector("img");
+      if (img.dataset.src) {
+        const source = img.parentElement.querySelector("source[data-srcset]");
+        if (source) {
+          source.srcset = source.dataset.srcset;
+          delete source.dataset.srcset;
+        }
+        if (img.dataset.srcset) img.srcset = img.dataset.srcset;
+        img.src = img.dataset.src;
+        delete img.dataset.src;
+        delete img.dataset.srcset;
+      }
+      return img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+    };
+    const goTo = async (index) => {
+      const target = (index + slides.length) % slides.length;
+      const request = ++requested;
+      await loadSlide(target);
+      if (request !== requested) return;
+      current = target;
       slides.forEach((slide, i) => slide.classList.toggle("is-active", i === current));
       tabs.forEach((tab, i) => {
         tab.classList.toggle("is-active", i === current);
         tab.setAttribute("aria-current", String(i === current));
       });
       counter.textContent = String(current + 1).padStart(2, "0");
+      // Prepare only the next slide; native lazy loading handles catalog photos.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        loadSlide((current + 1) % slides.length);
+      }
     };
 
     const stop = () => {
@@ -660,41 +684,4 @@
     start();
   }
 
-  /* ---------- 15. Постепенная загрузка ----------
-     Первый экран грузится как обычно. Когда окно готово, в простое
-     по очереди доезжают слайды 2–5, затем ленивые картинки прогревают
-     кеш — к скроллу они уже на месте. */
-  const whenIdle = (cb) => {
-    if ("requestIdleCallback" in window) requestIdleCallback(cb, { timeout: 2000 });
-    else setTimeout(cb, 300);
-  };
-
-  const loadDeferredSlides = (done) => {
-    const deferred = $$(".hero__slide img[data-src]");
-    const step = (i) => {
-      if (i >= deferred.length) { done(); return; }
-      const img = deferred[i];
-      const next = () => step(i + 1);
-      img.addEventListener("load", next, { once: true });
-      img.addEventListener("error", next, { once: true });
-      img.src = img.dataset.src;
-      img.removeAttribute("data-src");
-    };
-    step(0);
-  };
-
-  const warmLazyImages = () => {
-    const urls = $$("img[loading='lazy']").map((img) => img.src);
-    const step = (i) => {
-      if (i >= urls.length) return;
-      const probe = new Image();
-      probe.onload = probe.onerror = () => step(i + 1);
-      probe.src = urls[i];
-    };
-    step(0);
-  };
-
-  window.addEventListener("load", () =>
-    whenIdle(() => loadDeferredSlides(() => whenIdle(warmLazyImages)))
-  );
 })();

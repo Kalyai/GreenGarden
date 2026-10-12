@@ -156,10 +156,10 @@ def build(slug, page):
   <title>{page['title']}</title>
   <meta name="description" content="{page['description']}">
   <link rel="icon" type="image/png" href="img/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=30">
+
+
+
+  <link rel="stylesheet" href="css/style.min.css?v=42">
 </head>
 <body>
 
@@ -182,7 +182,7 @@ def build(slug, page):
 
   {modals}
 
-  <script src="js/main.js?v=23"></script>
+  <script src="js/main.min.js?v=28"></script>
 </body>
 </html>
 """
