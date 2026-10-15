@@ -1724,6 +1724,7 @@ body.modal-open { overflow: hidden; }
 .home-help__card h3{font-size:28px;line-height:1.15;color:var(--text-strong);overflow-wrap:anywhere}
 .home-help__card p{font-size:14px;line-height:1.7;color:var(--text-body)}
 .home-help__card span{margin-top:auto;color:var(--color-primary);font-size:14px;font-weight:700}
+@media(min-width:900px) and (max-width:1199px){.nav{gap:16px}.nav__link{font-size:15px}.header__inner{gap:12px}.header__actions{gap:8px}.header__checkout{font-size:13px;padding-inline:14px}}
 @media(max-width:1000px){.home-help__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.home-help__grid{grid-template-columns:1fr}.home-help__card{padding:24px}}
 

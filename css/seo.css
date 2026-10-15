@@ -68,6 +68,7 @@
 .seo-page{color:#50584a}.seo-page .logo__text small{color:#626b5b}.seo-nav a{color:#50584a;display:inline-flex;align-items:center;min-height:24px}.seo-page .section__eyebrow{color:#85613e}.seo-page .product-specs td,.seo-page .seo-faq summary{color:#50584a}.seo-callout>p{color:#46513e}
 
 .seo-product__image>picture{display:block}
+@media(max-width:850px){.seo-page .header__inner{flex-wrap:wrap;height:auto;min-height:72px;padding-block:10px;gap:10px}.seo-page .header{height:auto}.seo-nav{order:2;width:100%;justify-content:space-between;gap:8px;flex-wrap:wrap}.seo-phones{order:1;margin-left:auto}}
 .seo-catalog-links{padding:16px 20px;background:#eef1e7;border:1px solid var(--color-border);border-radius:12px;gap:12px 28px}
 .seo-catalog-links a{min-height:24px;display:inline-flex;align-items:center}
 .seo-budget{padding:28px;border:1px solid var(--color-border);border-radius:16px;background:#fff}

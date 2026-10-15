@@ -122,6 +122,8 @@ class GardenSEO(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn('href="tel:+79258810190"',header)
                 self.assertIn('href="tel:+74952012579"',header)
+                self.assertIn('Помощь',header)
+                self.assertIn('href="#garden-help"' if path=='/' else 'href="/#garden-help"',header)
 
 
 if __name__=='__main__':

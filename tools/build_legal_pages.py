@@ -159,7 +159,7 @@ def build(slug, page):
 
 
 
-  <link rel="stylesheet" href="css/style.min.css?v=42">
+  <link rel="stylesheet" href="css/style.min.css?v=44">
 </head>
 <body>
 
