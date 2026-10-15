@@ -93,6 +93,26 @@ class GardenSEO(unittest.TestCase):
         self.assertIn('id="delivery"',faq)
         self.assertNotIn('"@type": "QAPage"',faq)
 
+    def test_price_answer_does_not_repeat_editable_price(self):
+        p={'name':'Актинидия','slug':'test','characteristics':{},'price':123456,'availability':'https://schema.org/InStock'}
+        before=seo_site.product_questions(p)[0]
+        after=seo_site.product_questions(dict(p,price=987654,availability='https://schema.org/OutOfStock'))[0]
+        self.assertEqual(before,after)
+        self.assertIn('выше в карточке',before[1])
+        self.assertNotIn('123 456',before[1])
+        self.assertIn('+7 (495) 201-25-79',before[1])
+
+    def test_both_phones_in_every_public_header(self):
+        import xml.etree.ElementTree as ET
+        from urllib.parse import urlsplit
+        for loc in ET.parse(ROOT/'sitemap.xml').findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc'):
+            path=urlsplit(loc.text).path
+            page=ROOT/'index.html' if path=='/' else ROOT/(path.strip('/')+'.html')
+            header=page.read_text().split('</header>',1)[0]
+            with self.subTest(path=path):
+                self.assertIn('href="tel:+79258810190"',header)
+                self.assertIn('href="tel:+74952012579"',header)
+
 
 if __name__=='__main__':
     unittest.main()

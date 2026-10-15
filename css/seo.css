@@ -7,7 +7,8 @@
 .seo-page p { line-height: 1.7; }
 .seo-nav { display: flex; gap: 22px; align-items: center; font-size: 14px; }
 .seo-nav a:hover, .seo-links a:hover, .seo-tile h3 a:hover { text-decoration: underline; text-underline-offset: 4px; }
-.seo-phone { font-size: 14px; white-space: nowrap; }
+.seo-phones { display:flex; flex-direction:column; gap:2px; font-size:13px; white-space:nowrap; text-align:right; flex:none; }
+.seo-phones a { display:inline-flex; align-items:center; min-height:24px; }
 .seo-breadcrumbs { margin-bottom: 28px; font-size: 13px; color: #616557; }
 .seo-breadcrumbs ol { display: flex; flex-wrap: wrap; gap: 6px 10px; list-style: none; padding: 0; }
 .seo-breadcrumbs li + li::before { content: '/'; margin-right: 10px; color: #8a8c81; }
@@ -57,10 +58,11 @@
 .seo-skip:focus { top: 12px; }
 .seo-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .catalog__group-head h2 a:hover, .catalog__subgroup-title a:hover { text-decoration: underline; text-underline-offset: 5px; }
-@media(max-width:900px) { .seo-phone { display:none; } .seo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:900px) { .seo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:720px) { .seo-product { grid-template-columns:1fr; gap:24px; } .seo-page .header__inner { flex-wrap:wrap; height:auto; min-height:72px; padding-block:10px; gap:10px; } .seo-nav { width:100%; justify-content:space-between; gap:10px; font-size:13px; } .seo-main { padding-top:28px; } .seo-page .header { height:auto; } .seo-footer { grid-template-columns:1fr; } }
 @media(max-width:520px) { .seo-grid { grid-template-columns:1fr; } .seo-lead { font-size:16px; } .seo-page .product-specs th,.seo-page .product-specs td { padding:12px 6px; font-size:13px; } .seo-page .product-specs th { width:45%; } }
 @media(max-width:460px) { .seo-page .logo__text { display:flex; } }
+@media(max-width:720px) { .seo-phones { order:1; font-size:12px; margin-left:auto; } .seo-nav { order:2; } }
 
 /* Readable text against the existing cream and green surfaces. */
 .seo-page{color:#50584a}.seo-page .logo__text small{color:#626b5b}.seo-nav a{color:#50584a;display:inline-flex;align-items:center;min-height:24px}.seo-page .section__eyebrow{color:#85613e}.seo-page .product-specs td,.seo-page .seo-faq summary{color:#50584a}.seo-callout>p{color:#46513e}

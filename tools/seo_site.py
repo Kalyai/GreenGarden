@@ -18,7 +18,7 @@ from buyer_help import BUYER_TOPICS, CULTURE_QUESTIONS
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN = 'https://green-courtyard.space'
 E = html.escape
-CSS_VERSION = '5'
+CSS_VERSION = '6'
 ARTICLE_BY_SLUG = {a['slug']: a for a in ARTICLES}
 COLLECTION_BY_SLUG = {c[0]: c for c in COLLECTIONS}
 GROUP_COLLECTION = {c[1]: c for c in COLLECTIONS if c[1] and c[2] is None}
@@ -200,9 +200,9 @@ def shell(title, meta, path, content, nodes=None, image='/img/services-planting.
 <link rel="icon" href="/favicon.ico?v=1" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96.png"><link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/style.min.css?v=42"><link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">{jsonld(graph)}<link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-latin-ext.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-cyrillic.woff2" as="font" type="font/woff2" crossorigin></head>
 <body class="seo-page"><a class="seo-skip" href="#content">Перейти к содержанию</a>
-<header class="header"><div class="container header__inner"><a class="logo" href="/" title="На главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/collections">Подборки</a><a href="/blog">Блог</a><a href="/services">Услуги</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
+<header class="header"><div class="container header__inner"><a class="logo" href="/" title="На главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/collections">Подборки</a><a href="/blog">Блог</a><a href="/services">Услуги</a><a href="/contacts">Контакты</a></nav><div class="seo-phones" aria-label="Телефоны питомника"><a href="tel:+79258810190">+7 (925) 881-01-90</a><a href="tel:+74952012579">+7 (495) 201-25-79</a></div></div></header>
 <main id="content" class="container seo-main">{content}</main>
-<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/collections">Все подборки растений</a><a href="/blog">Блог о растениях</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Практические памятки</a><a href="/faq">Вопросы и ответы</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
+<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a><br><a href="tel:+74952012579">+7 (495) 201-25-79</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/collections">Все подборки растений</a><a href="/blog">Блог о растениях</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Практические памятки</a><a href="/faq">Вопросы и ответы</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
 {'<script src="/js/product.min.js?v=2"></script>' if script else ''}</body></html>'''
 
 
@@ -253,7 +253,7 @@ def comparison_table(items, group, caption, limit=12, expanded=False, keys=None)
 def product_questions(p):
     name = clean(p['name'])
     data = dict(facts(p))
-    questions = [(f'Сколько стоит {name}?', f'В карточке указано: {price(p)}. Статус: {stock(p).lower()}. Перед оплатой подтвердите цену и размер конкретного экземпляра. Доставка и посадка рассчитываются отдельно.')]
+    questions = [(f'Сколько стоит {name}?', 'Текущая цена указана выше в карточке. Если показан диапазон или «Цена по запросу», уточните стоимость выбранного размера по телефонам +7 (925) 881-01-90 или +7 (495) 201-25-79 либо отправьте заявку через корзину. Доставка и посадка рассчитываются отдельно.')]
     for key, question in [('Созревание', f'Когда созревает {name}?'), ('Опыление', 'Что указано об опылении?'), ('Цветение', 'Когда цветёт это растение?')]:
         if key in data:
             questions.append((question, f'В характеристиках предложения указано: {data[key].rstrip(".")}. '+('Совместимость с растениями вашего сада уточните по названиям сортов.' if key=='Опыление' else 'Фактические сроки зависят от погоды и условий участка.')))
