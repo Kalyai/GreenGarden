@@ -99,9 +99,6 @@ class CatalogStore:
                 end = source.index('\n        </div>\n      </div>\n    </section>\n  </main>', start) + len('\n        </div>')
                 markup, _ = renderer.catalog_markup(self.products)
                 markup = seo_site.enhance_catalog(markup, self.products)
-                # catalog.html already contains the editorial links before
-                # this replace point; enhance_catalog prepends them as well.
-                markup = markup[markup.index('        <div class="catalog__filters"'):]
                 result = source[:start] + markup + source[end:]
             elif path == "/blog":
                 result = seo_site.blog_index()

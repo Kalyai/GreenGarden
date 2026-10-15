@@ -85,13 +85,23 @@ class GardenSEO(unittest.TestCase):
 
     def test_catalog_help_and_general_faq(self):
         rendered=seo_site.enhance_catalog('        <div class="catalog__filters"></div>',[])
-        self.assertIn('/faq',rendered)
+        self.assertNotIn('seo-catalog-links',rendered)
         self.assertNotIn('/collections/golubika',rendered)
         self.assertNotIn('/collections/irga',rendered)
         faq=seo_site.buyer_faq_page()
         self.assertEqual(faq.count('<summary>'),23)
         self.assertIn('id="delivery"',faq)
         self.assertNotIn('"@type": "QAPage"',faq)
+
+    def test_help_sections_are_on_home_after_catalog(self):
+        from check_seo import Page
+        source=(ROOT/'index.html').read_text()
+        self.assertLess(source.index('id="catalog"'),source.index('id="garden-help"'))
+        self.assertLess(source.index('id="garden-help"'),source.index('id="services"'))
+        block=source.split('id="garden-help"',1)[1].split('</section>',1)[0]
+        links=Page(block).links
+        for path in ('/collections','/blog','/faq','/delivery'):
+            self.assertIn(path,links)
 
     def test_price_answer_does_not_repeat_editable_price(self):
         p={'name':'Актинидия','slug':'test','characteristics':{},'price':123456,'availability':'https://schema.org/InStock'}

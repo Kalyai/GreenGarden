@@ -453,8 +453,6 @@ def guide_page(g):
 def enhance_catalog(source, products):
     source=source.replace('</head>',f'<link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">\n</head>')
     source=source.replace('<title>Каталог растений — Зелёный дворик | Плодовые, ягодные, хвойные и декоративные растения</title>','<title>Каталог саженцев и крупномеров в Мытищах — Зелёный дворик</title>')
-    block='<nav class="seo-links seo-catalog-links" aria-label="Помощь с выбором и заказом"><a href="/collections">Подборки растений</a><a href="/blog">Блог и советы</a><a href="/faq">Вопросы и ответы</a><a href="/delivery">Получение заказа</a></nav>'
-    source=source.replace('        <div class="catalog__filters"',block+'\n        <div class="catalog__filters"',1)
     for c in COLLECTIONS:
         slug, group, subgroup, label = c[:4]
         if subgroup is None:

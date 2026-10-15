@@ -20,7 +20,8 @@ def main():
         (ROOT/'catalog'/f'{p["slug"]}.html').write_text(seo_site.product_page(p, products))
     # Keep the current catalog header/cart/footer and its performance fixes.
     source = (ROOT/'catalog.html').read_text()
-    start = source.index('<nav class="seo-links seo-catalog-links"')
+    old_links = '<nav class="seo-links seo-catalog-links"'
+    start = source.index(old_links) if old_links in source else source.index('        <div class="catalog__filters"')
     end = source.index('\n        </div>\n      </div>\n    </section>\n  </main>', start)+len('\n        </div>')
     markup, _ = renderer.catalog_markup(products)
     enhanced = seo_site.enhance_catalog(markup, products)
