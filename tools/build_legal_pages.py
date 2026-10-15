@@ -155,7 +155,7 @@ def build(slug, page):
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{page['title']}</title>
   <meta name="description" content="{page['description']}">
-  <link rel="icon" type="image/png" href="img/logo.png">
+  <link rel="icon" href="/favicon.ico?v=1" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96.png"><link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
 
 
 

@@ -7,6 +7,12 @@
     <loc>https://green-courtyard.space/catalog</loc>
   </url>
   <url>
+    <loc>https://green-courtyard.space/collections</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog</loc>
+  </url>
+  <url>
     <loc>https://green-courtyard.space/services</loc>
   </url>
   <url>
@@ -76,6 +82,78 @@
     <loc>https://green-courtyard.space/collections/siren</loc>
   </url>
   <url>
+    <loc>https://green-courtyard.space/collections/abrikosy</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/alycha</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/vishni</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/chereshni</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/cherevishni</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/slivy</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/ryabiny-plodovye</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/shelkovitsa</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/oblepikha</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/eli</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/sosny</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/mozhzhevelniki</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/rododendrony</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/chubushniki</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/dekorativnye-yabloni</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/kleny</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/ivy</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/boyaryshniki</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/samoplodnye-plodovye-derevya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/sladkie-plodovye-derevya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/rannie-plodovye-derevya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/sladkie-yagodnye-rasteniya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/rannie-yagodnye-rasteniya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/collections/remontantnaya-malina</loc>
+  </url>
+  <url>
     <loc>https://green-courtyard.space/guides/kak-vybrat-sazhenets</loc>
   </url>
   <url>
@@ -83,6 +161,78 @@
   </url>
   <url>
     <loc>https://green-courtyard.space/guides/dostavka-i-posadka-krupnomerov</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/yablonya-sort-podvoy-sroki</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/grusha-opylenie-i-vybor</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/vishnya-chereshnya-dyuk</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/abrikos-dlya-podmoskovya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/sliva-ili-alycha</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/golubika-blyukrop-dyuk-patriot</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/malina-remontantnaya-ili-letnyaya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/smorodina-chernaya-krasnaya-belaya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/zhimolost-sorta-i-opylenie</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/kryzhovnik-vybor-bez-shipov</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/tuya-smaragd-ili-brabant</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/el-sosna-mozhzhevelnik-vybor</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/gortenziya-metelchataya-drevovidnaya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/rododendron-pochva-i-mesto</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/siren-na-shtambe-ili-kustom</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/dekorativnaya-ili-plodovaya-yablonya</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/plodovyy-sad-na-malenkom-uchastke</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/zhivaya-izgorod-raschet</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/morozostoykost-i-zimostoykost</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/konteyner-c2-c5-razmer-sazhentsa</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/pochemu-sazhentsy-raznaya-tsena</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/kupit-rasteniya-pitomnik-mytishchi</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/kogda-pokupat-i-sazhat-sazhentsy</loc>
+  </url>
+  <url>
+    <loc>https://green-courtyard.space/blog/poliv-posle-posadki-dereva</loc>
   </url>
   <url>
     <loc>https://green-courtyard.space/catalog/abrikos-chempion-severa</loc>

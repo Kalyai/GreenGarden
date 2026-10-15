@@ -28,14 +28,14 @@ class Routes(unittest.TestCase):
         except HTTPError as e: return e
     def test_crawler_pages(self):
         for ua in ('Googlebot','YandexBot'):
-            for path in ('/robots.txt','/sitemap.xml','/collections/irga','/guides/golubika-pochva-i-posadka','/guides','/delivery','/catalog/golubika-blyukrop'):
+            for path in ('/robots.txt','/sitemap.xml','/collections/irga','/guides/golubika-pochva-i-posadka','/guides','/delivery','/catalog/golubika-blyukrop','/blog','/collections','/blog/golubika-blyukrop-dyuk-patriot','/collections/remontantnaya-malina','/favicon.ico','/img/favicon-96.png'):
                 with self.subTest(ua=ua,path=path),self.request(path,ua) as r: self.assertEqual(r.status,200)
     def test_redirects_preserve_query(self):
-        for path,target in [('/catalog/','/catalog'),('/collections/irga.html','/collections/irga'),('/collections/irga/','/collections/irga'),('/guides.html','/guides'),('/guides/','/guides'),('/contacts/','/contacts'),('/guides/kak-vybrat-sazhenets.html','/guides/kak-vybrat-sazhenets')]:
+        for path,target in [('/catalog/','/catalog'),('/collections/irga.html','/collections/irga'),('/collections/irga/','/collections/irga'),('/guides.html','/guides'),('/guides/','/guides'),('/contacts/','/contacts'),('/guides/kak-vybrat-sazhenets.html','/guides/kak-vybrat-sazhenets'),('/blog.html','/blog'),('/blog/','/blog'),('/collections.html','/collections'),('/collections/','/collections'),('/blog/golubika-blyukrop-dyuk-patriot.html','/blog/golubika-blyukrop-dyuk-patriot'),('/blog/golubika-blyukrop-dyuk-patriot/','/blog/golubika-blyukrop-dyuk-patriot')]:
             with self.subTest(path=path),self.request(path+'?utm_source=test',method='HEAD') as r:
                 self.assertEqual(r.status,301); self.assertEqual(r.headers['Location'],target+'?utm_source=test')
     def test_not_found_and_private_files(self):
-        for path in ('/collections/not-a-plant','/guides/not-an-article','/backend/app.py','/requirements.txt','/tools/seo-build-report.json','/img/%2e%2e/backend/bot_token.txt'):
+        for path in ('/collections/not-a-plant','/guides/not-an-article','/blog/not-an-article','/backend/app.py','/requirements.txt','/tools/seo-build-report.json','/img/%2e%2e/backend/bot_token.txt'):
             with self.subTest(path=path),self.request(path) as r: self.assertEqual(r.status,404)
     def test_robots_content(self):
         with self.request('/robots.txt') as r:

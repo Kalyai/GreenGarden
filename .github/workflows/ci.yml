@@ -24,7 +24,10 @@ jobs:
         run: python3 -m py_compile backend/*.py tools/*.py
 
       - name: MAX, админка и маршруты
-        run: python3 -m unittest tools.test_max_bot tools.test_admin tools.test_seo_routes
+        run: python3 -m unittest tools.test_max_bot tools.test_admin tools.test_seo_routes tools.test_garden_seo
+
+      - name: SEO, карта сайта и внутренние ссылки
+        run: python3 tools/check_seo.py
 
       - name: Валидность docker-compose.yml
         run: SITE_ADMIN_PASSWORD=ci DOMAIN=example.test docker compose config --quiet

@@ -1,0 +1,16 @@
+{
+  "url": "http://127.0.0.1:8000/blog/yablonya-sort-podvoy-sroki",
+  "environment": "localhost, mobile Lighthouse; not production PageSpeed",
+  "categories": {
+    "performance": 97,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "metrics": {
+    "largest-contentful-paint": "2.6 s",
+    "cumulative-layout-shift": "0",
+    "total-blocking-time": "0 ms"
+  },
+  "label_content_name_mismatch": 1
+}

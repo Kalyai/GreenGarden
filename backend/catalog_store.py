@@ -103,6 +103,15 @@ class CatalogStore:
                 # this replace point; enhance_catalog prepends them as well.
                 markup = markup[markup.index('        <div class="catalog__filters"'):]
                 result = source[:start] + markup + source[end:]
+            elif path == "/blog":
+                result = seo_site.blog_index()
+            elif path == "/collections":
+                result = seo_site.collections_index(self.products)
+            elif re.fullmatch(r"/blog/[a-z0-9-]+", path):
+                article = seo_site.ARTICLE_BY_SLUG.get(path.rsplit("/", 1)[-1])
+                if not article:
+                    return None
+                result = seo_site.blog_page(article, self.products)
             elif re.fullmatch(r"/catalog/[a-z0-9-]+", path):
                 p = self.products_by_slug.get(path.rsplit("/", 1)[-1])
                 if not p:

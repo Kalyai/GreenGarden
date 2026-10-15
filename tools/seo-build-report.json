@@ -1,8 +1,9 @@
 {
   "products": 315,
-  "collections": 18,
+  "collections": 42,
   "guides": 3,
-  "sitemap_urls": 343,
+  "blog_articles": 24,
+  "sitemap_urls": 393,
   "images": {
     "original_bytes": 81334569,
     "480": 11816158,

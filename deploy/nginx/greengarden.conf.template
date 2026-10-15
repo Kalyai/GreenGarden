@@ -204,6 +204,18 @@ server {
         limit_req zone=per_ip burst=20 nodelay;
         include /etc/nginx/snippets/proxy-app.conf;
     }
+    location ^~ /blog/ {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location = /blog {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
+    location = /collections {
+        limit_req zone=per_ip burst=20 nodelay;
+        include /etc/nginx/snippets/proxy-app.conf;
+    }
 
     # Главная страница — отдельной локацией. Это обязательно: try_files
     # отрабатывает в фазе precontent, то есть РАНЬШЕ модуля index (фаза
@@ -229,11 +241,13 @@ server {
     location = /contacts.html { return 301 /contacts$is_args$args; }
     location = /delivery.html { return 301 /delivery$is_args$args; }
     location = /guides.html { return 301 /guides$is_args$args; }
+    location = /blog.html { return 301 /blog$is_args$args; }
+    location = /collections.html { return 301 /collections$is_args$args; }
     location = /privacy-policy.html { return 301 /privacy-policy$is_args$args; }
     location = /index.html { return 301 /$is_args$args; }
-    location ~ ^/(catalog|collections|guides)/([a-z0-9-]+)\.html$ { return 301 /$1/$2$is_args$args; }
-    location ~ ^/(catalog|collections|guides)/([a-z0-9-]+)/$ { return 301 /$1/$2$is_args$args; }
-    location ~ ^/(services|additional-services|contacts|delivery|guides|offer|privacy-policy)/$ { return 301 /$1$is_args$args; }
+    location ~ ^/(catalog|collections|guides|blog)/([a-z0-9-]+)\.html$ { return 301 /$1/$2$is_args$args; }
+    location ~ ^/(catalog|collections|guides|blog)/([a-z0-9-]+)/$ { return 301 /$1/$2$is_args$args; }
+    location ~ ^/(services|additional-services|contacts|delivery|guides|blog|collections|offer|privacy-policy)/$ { return 301 /$1$is_args$args; }
 
     location = /robots.txt {
         include /etc/nginx/snippets/security-headers.conf;

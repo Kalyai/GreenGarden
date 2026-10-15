@@ -12,11 +12,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from catalog_taxonomy import classify, GROUP_LABELS, is_large_specimen
 from seo_content import COLLECTIONS, GUIDES
+from garden_content import ARTICLES, SOURCES, ARTICLE_FOCUS
 
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN = 'https://green-courtyard.space'
 E = html.escape
-CSS_VERSION = '3'
+CSS_VERSION = '4'
+ARTICLE_BY_SLUG = {a['slug']: a for a in ARTICLES}
 COLLECTION_BY_SLUG = {c[0]: c for c in COLLECTIONS}
 GROUP_COLLECTION = {c[1]: c for c in COLLECTIONS if c[1] and c[2] is None}
 SUBGROUP_COLLECTION = {(c[1], c[2]): c for c in COLLECTIONS if c[2] not in (None, 'large')}
@@ -185,7 +187,7 @@ def breadcrumbs(items):
     return '<nav class="seo-breadcrumbs" aria-label="Хлебные крошки"><ol>'+''.join(html_items)+'</ol></nav>', {'@type':'BreadcrumbList','itemListElement':nodes}
 
 
-def shell(title, meta, path, content, nodes=None, image='/img/services-planting.webp', script=False):
+def shell(title, meta, path, content, nodes=None, image='/img/services-planting.webp', script=False, og_type=None):
     canonical = DOMAIN + path
     absolute_image = DOMAIN+image if image.startswith('/') else image
     graph = {'@context':'https://schema.org','@graph':nodes or []}
@@ -193,13 +195,13 @@ def shell(title, meta, path, content, nodes=None, image='/img/services-planting.
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{E(title)}</title><meta name="description" content="{E(meta)}"><link rel="canonical" href="{canonical}">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta property="og:type" content="{'product' if script else 'website'}"><meta property="og:locale" content="ru_RU"><meta property="og:site_name" content="Зелёный дворик"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(meta)}"><meta property="og:url" content="{canonical}"><meta property="og:image" content="{E(absolute_image)}"><meta property="og:image:alt" content="{E(title.split(' — ')[0])}">
-<link rel="icon" href="/img/logo.png">
+<meta property="og:type" content="{og_type or ('product' if script else 'website')}"><meta property="og:locale" content="ru_RU"><meta property="og:site_name" content="Зелёный дворик"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(meta)}"><meta property="og:url" content="{canonical}"><meta property="og:image" content="{E(absolute_image)}"><meta property="og:image:alt" content="{E(title.split(' — ')[0])}">
+<link rel="icon" href="/favicon.ico?v=1" sizes="16x16 32x32 48x48"><link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96.png"><link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/style.min.css?v=42"><link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">{jsonld(graph)}<link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-latin-ext.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/cormorant-garamond-cyrillic.woff2" as="font" type="font/woff2" crossorigin></head>
 <body class="seo-page"><a class="seo-skip" href="#content">Перейти к содержанию</a>
-<header class="header"><div class="container header__inner"><a class="logo" href="/" aria-label="Зелёный дворик питомник растений — на главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/services">Услуги</a><a href="/guides">Советы</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
+<header class="header"><div class="container header__inner"><a class="logo" href="/" title="На главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/collections">Подборки</a><a href="/blog">Блог</a><a href="/services">Услуги</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
 <main id="content" class="container seo-main">{content}</main>
-<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Советы по выбору</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
+<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/collections">Все подборки растений</a><a href="/blog">Блог о растениях</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Практические памятки</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
 {'<script src="/js/product.min.js?v=2"></script>' if script else ''}</body></html>'''
 
 
@@ -217,6 +219,46 @@ def faq_html(items):
 
 def buying_block():
     return '''<aside class="seo-callout"><h2>Заказ и получение в Мытищах</h2><p>Перед поездкой уточните наличие, размер и стоимость выбранных растений. Точка продаж — Экспоцентр питомников «Дружба», Кропоткинский проезд, место № 12. Доставка и посадка согласовываются отдельно.</p><div class="seo-links"><a href="/contacts">Адрес и проезд →</a><a href="/delivery">Доставка и самовывоз →</a><a href="/services">Услуги питомника →</a></div></aside>'''
+
+
+def articles_for(collection, limit=3):
+    if not collection:
+        return []
+    topic = {'samoplodnye-plodovye-derevya':'plodovye-derevya', 'sladkie-plodovye-derevya':'plodovye-derevya', 'rannie-plodovye-derevya':'plodovye-derevya', 'sladkie-yagodnye-rasteniya':'yagodnye-kustarniki', 'rannie-yagodnye-rasteniya':'yagodnye-kustarniki', 'remontantnaya-malina':'malina'}.get(collection[0],collection[0])
+    matching = [a for a in ARTICLES if topic in a['collections']]
+    return sorted(matching, key=lambda a: len(a['collections']))[:limit]
+
+
+def reading_links(articles):
+    if not articles:
+        return ''
+    return '<section class="seo-section"><h2>Помощь в выборе и уходе</h2><nav class="seo-links" aria-label="Статьи по теме">'+''.join(f'<a href="/blog/{a["slug"]}">{E(a["title"])} →</a>' for a in articles)+'</nav></section>'
+
+
+def comparison_table(items, group, caption, limit=12, expanded=False, keys=None):
+    """Only real catalog values; never infer a cultivar trait from its name."""
+    if len(items) < 2:
+        return ''
+    keys = keys or (['Созревание', 'Вкус', 'Опыление'] if group in ('fruit','berry') else ['Высота растения', 'Диаметр кроны', 'Цветение'])
+    rows = []
+    for p in items[:limit]:
+        data = dict(facts(p))
+        cells = ''.join(f'<td>{E(data.get(k) or "Не указано")}</td>' for k in keys)
+        rows.append(f'<tr><th scope="row"><a href="/catalog/{E(p["slug"])}">{E(clean(p["name"]))}</a></th>{cells}<td>{E(price(p))}<br><span class="seo-muted">{E(stock(p))}</span></td></tr>')
+    note = f'Показаны первые {limit} позиций из {len(items)}. Полный список — в подборке растений.' if len(items)>limit else 'Значения взяты из карточек. «Не указано» означает, что параметр нужно уточнить.'
+    return '<details class="seo-comparison"'+(' open' if expanded else '')+'><summary>Сравнить характеристики и цены</summary><p class="seo-muted">'+note+'</p><div class="seo-table-scroll" role="region" aria-label="Таблица сравнения растений" tabindex="0"><table><caption>'+E(caption)+'</caption><thead><tr><th scope="col">Растение</th>'+''.join(f'<th scope="col">{E(k)}</th>' for k in keys)+'<th scope="col">Цена и наличие</th></tr></thead><tbody>'+''.join(rows)+'</tbody></table></div></details>'
+
+
+def product_questions(p):
+    name = clean(p['name'])
+    data = dict(facts(p))
+    questions = [(f'Сколько стоит {name}?', f'В карточке указано: {price(p)}. Статус: {stock(p).lower()}. Перед оплатой подтвердите цену и размер конкретного экземпляра. Доставка и посадка рассчитываются отдельно.')]
+    for key, question in [('Созревание', f'Когда созревает {name}?'), ('Опыление', 'Что указано об опылении?'), ('Цветение', 'Когда цветёт это растение?')]:
+        if key in data:
+            questions.append((question, f'В характеристиках предложения указано: {data[key].rstrip(".")}. '+('Совместимость с растениями вашего сада уточните по названиям сортов.' if key=='Опыление' else 'Фактические сроки зависят от погоды и условий участка.')))
+    if 'Высота растения' in data:
+        questions.append(('Какая высота у растения и у продаваемого саженца?', f'В описании указана высота растения: {data["Высота растения"]}. Это не обязательно размер экземпляра в продаже. Фактическую высоту, возраст и корневую систему подтвердите по артикулу.'))
+    return questions
 
 
 def product_page(p, products):
@@ -252,13 +294,24 @@ def product_page(p, products):
            f'<button class="btn btn--primary" type="button" data-product-add data-name="{E(p["name"])}" data-price="{E(price(p))}">В корзину</button>')
     order_answer = ('Свяжитесь с питомником и назовите артикул, чтобы уточнить возможность и срок поступления. При появлении растения подтвердите размер и стоимость.' if unavailable else
                     'Добавьте позицию в корзину и оформите заявку в каталоге либо свяжитесь с питомником. Перед подтверждением уточняются наличие, размер и итоговая стоимость.')
-    content = f'''{bc}<article><p class="section__eyebrow">{E(GROUP_LABELS[classify(p)[0]])}</p><h1>{E(name)}</h1><div class="seo-product"><div class="seo-product__image">{image_html(p,hero=True)}<p class="seo-muted">Фото иллюстрирует растение. Размер и вид конкретного экземпляра уточните перед заказом.</p></div><div><p class="seo-price">{E(price(p))}</p><p class="seo-stock">{E(stock(p))}</p><p class="seo-muted">Артикул: {E(p.get('sku') or 'уточняется')}</p><p class="seo-product__intro">{E(intro)}</p><div class="seo-actions">{buy}<a class="btn btn--outline" href="tel:+79258810190">Задать вопрос</a></div><p class="seo-muted">Цены и наличие подтверждаем при заказе. Доставка и посадка рассчитываются отдельно.</p><noscript><p>Для заказа позвоните <a href="tel:+79258810190">+7 (925) 881-01-90</a>.</p></noscript></div></div><section class="seo-section"><h2>Характеристики {E(name)}</h2><p class="seo-muted">Размеры в описании характеризуют растение, а не обязательно продаваемый саженец. Уточните возраст, подвой, контейнер и фактическую высоту выбранного экземпляра.</p><table class="product-specs"><caption class="seo-sr-only">Характеристики растения</caption><tbody>{table}</tbody></table></section></article>{faq_html([('Как заказать это растение?', order_answer),('Можно ли забрать растение самостоятельно?', 'Да, после согласования заказа можно приехать на точку продаж в Мытищах. Адрес и часы работы указаны на странице контактов.')])}{buying_block()}{related_html}<nav class="seo-links" aria-label="Полезные разделы">{collection_link}<a href="/guides/kak-vybrat-sazhenets">Как выбрать саженец →</a></nav>'''
+    content = f'''{bc}<article><p class="section__eyebrow">{E(GROUP_LABELS[classify(p)[0]])}</p><h1>{E(name)}</h1><div class="seo-product"><div class="seo-product__image">{image_html(p,hero=True)}<p class="seo-muted">Фото иллюстрирует растение. Размер и вид конкретного экземпляра уточните перед заказом.</p></div><div><p class="seo-price">{E(price(p))}</p><p class="seo-stock">{E(stock(p))}</p><p class="seo-muted">Артикул: {E(p.get('sku') or 'уточняется')}</p><p class="seo-product__intro">{E(intro)}</p><div class="seo-actions">{buy}<a class="btn btn--outline" href="tel:+79258810190">Задать вопрос</a></div><p class="seo-muted">Цены и наличие подтверждаем при заказе. Доставка и посадка рассчитываются отдельно.</p><noscript><p>Для заказа позвоните <a href="tel:+79258810190">+7 (925) 881-01-90</a>.</p></noscript></div></div><section class="seo-section"><h2>Характеристики {E(name)}</h2><p class="seo-muted">Размеры в описании характеризуют растение, а не обязательно продаваемый саженец. Уточните возраст, подвой, контейнер и фактическую высоту выбранного экземпляра.</p><table class="product-specs"><caption class="seo-sr-only">Характеристики растения</caption><tbody>{table}</tbody></table></section></article>{faq_html(product_questions(p)+[('Как заказать это растение?', order_answer),('Можно ли забрать растение самостоятельно?', 'Да, после согласования заказа можно приехать на точку продаж в Мытищах. Адрес и часы работы указаны на странице контактов.')])}{buying_block()}{related_html}<nav class="seo-links" aria-label="Полезные разделы">{collection_link}<a href="/guides/kak-vybrat-sazhenets">Как выбрать саженец →</a></nav>'''
+    # Keep order actions and connect each cultivar to useful editorial material.
+    content += reading_links(articles_for(collection))
     return shell(f'{name} — купить в Мытищах | Зелёный дворик',meta,path,content,[schema,bc_schema],image,True)
 
 
 def members(c, products):
     slug, group, subgroup = c[:3]
     if subgroup=='large': return [p for p in products if is_large_specimen(p)]
+    if subgroup and subgroup.startswith('@'):
+        def matches(p):
+            data=dict(facts(p))
+            if subgroup=='@self-fertile': return data.get('Опыление')=='Самоопыляемый'
+            if subgroup=='@sweet': return data.get('Вкус') in ('Сладкий','Очень сладкий')
+            if subgroup=='@early': return data.get('Созревание')=='Ранний'
+            if subgroup=='@remontant': return classify(p)[1]=='Малина' and data.get('Созревание')=='Ремонтантный'
+            return False
+        return [p for p in products if classify(p)[0]==group and matches(p)]
     return [p for p in products if classify(p)[0]==group and (subgroup is None or classify(p)[1]==subgroup)]
 
 
@@ -278,8 +331,68 @@ def collection_page(c, products):
     content = f'''{bc}<section class="seo-heading"><p class="section__eyebrow">Питомник · точка продаж в Мытищах</p><h1>{E(heading)}</h1><p class="seo-lead">{E(intro)}</p>{links}<p class="seo-muted">В подборке: {len(items)}. Цены и наличие подтверждаем при заказе.</p></section><section aria-label="Растения в подборке" class="seo-grid"><h2 class="seo-sr-only">Растения в подборке</h2>{''.join(tile(p) for p in items)}</section><section class="seo-section seo-prose"><h2>На что обратить внимание при выборе</h2><p>{E(advice)}</p><p><a href="/guides/{guide}">{E(guide_title)} →</a></p>{'<p class="seo-muted">О требованиях к грунту: <a href="https://www.rhs.org.uk/fruit/blueberries/grow-your-own">рекомендации RHS по выращиванию голубики</a>.</p>' if slug=='golubika' else ''}</section>{faq_html([(question,answer),('Где посмотреть растения и уточнить цену?', 'Точка продаж находится в Мытищах, в Экспоцентре питомников «Дружба», место № 12. Перед визитом свяжитесь с нами, чтобы уточнить наличие выбранных позиций и размер посадочного материала.')])}{buying_block()}'''
     schema={'@type':'CollectionPage','name':heading,'url':DOMAIN+path,'description':intro,'mainEntity':{'@type':'ItemList','numberOfItems':len(items),'itemListElement':[{'@type':'ListItem','position':i,'name':clean(p['name']),'url':DOMAIN+'/catalog/'+p['slug']} for i,p in enumerate(items,1)]}}
     meta=f'{heading} в питомнике «Зелёный дворик»: фото, цены и характеристики. Сравните растения, уточните наличие. Самовывоз в Мытищах, доставка по согласованию.'
-    result = shell(f'{heading} — купить в Мытищах | Зелёный дворик',meta,path,content,[schema,bcs],items[0].get('seo_image') if items else '/img/logo.png')
+    compare = comparison_table(items, group, heading+': сравнение предложений')
+    content = content.replace('<section aria-label="Растения в подборке"', compare+'<section aria-label="Растения в подборке"', 1)
+    content += reading_links(articles_for(c))
+    result = shell(f'{heading} — купить в Мытищах | Зелёный дворик',meta,path,content,[schema,bcs],(items[0].get('seo_image') or items[0].get('local_image') or '/img/logo.png') if items else '/img/logo.png')
     return result if items else result.replace('content="index,follow,max-image-preview:large"', 'content="noindex,follow"', 1)
+
+
+def collections_index(products):
+    bc,bcs=breadcrumbs([('Главная','/'),('Каталог','/catalog'),('Подборки растений',None)])
+    body=[]
+    for group, label in GROUP_LABELS.items():
+        selections=[c for c in COLLECTIONS if c[1]==group and members(c,products)]
+        if not selections:
+            continue
+        cards=''.join(f'<article><h3><a href="/collections/{c[0]}">{E(c[3])}</a></h3><p>{len(members(c,products))} позиций · Фото, характеристики и предложения</p></article>' for c in selections)
+        body.append(f'<section class="seo-section" id="{group}"><h2>{E(label)}</h2><div class="seo-topic-grid">{cards}</div></section>')
+    large=COLLECTION_BY_SLUG['krupnomery']
+    content=f'{bc}<h1>Подборки растений для сада</h1><p class="seo-lead">Выберите культуру, сравните сорта и проверьте условия выращивания. Параметры саженцев, цены и наличие подтвердим при согласовании заказа.</p><nav class="seo-links" aria-label="Группы растений">'+''.join(f'<a href="#{g}">{E(label)}</a>' for g,label in GROUP_LABELS.items() if any(c[1]==g for c in COLLECTIONS))+f'<a href="/collections/{large[0]}">Крупномеры</a></nav>'+''.join(body)+reading_links([ARTICLE_BY_SLUG['kupit-rasteniya-pitomnik-mytishchi']])
+    schema={'@type':'CollectionPage','name':'Подборки растений для сада','url':DOMAIN+'/collections','mainEntity':{'@type':'ItemList','itemListElement':[{'@type':'ListItem','position':i,'name':c[3],'url':DOMAIN+'/collections/'+c[0]} for i,c in enumerate(COLLECTIONS,1)]}}
+    return shell('Подборки саженцев и растений для сада в Мытищах — Зелёный дворик','Плодовые, ягодные, хвойные и декоративные растения: подборки культур, сравнение сортов, фото и цены. Точка продаж питомника в Мытищах.','/collections',content,[schema,bcs])
+
+
+def blog_card(a):
+    return f'<article><p class="section__eyebrow">{E(a["category"])}</p><h3><a href="/blog/{a["slug"]}">{E(a["title"])}</a></h3><p>{E(a["lead"])}</p><a class="seo-text-link" href="/blog/{a["slug"]}" aria-label="Читать статью → {E(a["title"])}">Читать статью →</a></article>'
+
+
+def blog_index():
+    bc,bcs=breadcrumbs([('Главная','/'),('Блог о растениях',None)])
+    categories=list(dict.fromkeys(a['category'] for a in ARTICLES))
+    nav='<nav class="seo-links" aria-label="Темы блога">'+''.join(f'<a href="#topic-{i}">{E(category)}</a>' for i,category in enumerate(categories))+'</nav>'
+    body=''.join(f'<section class="seo-section" id="topic-{i}"><h2>{E(category)}</h2><div class="seo-topic-grid">'+''.join(blog_card(a) for a in ARTICLES if a['category']==category)+'</div></section>' for i,category in enumerate(categories))
+    content=f'{bc}<p class="section__eyebrow">Выбор · сравнение · уход</p><h1>Блог о растениях и саде</h1><p class="seo-lead">Практические ответы перед покупкой: как сравнивать сорта, читать характеристики, планировать посадку и уход. В статьях — ссылки на предложения каталога и вопросы для консультации.</p>{nav}{body}<aside class="seo-callout"><h2>Уже выбрали культуру?</h2><p>Откройте подборки с фото, характеристиками и сравнением предложений. Наличие и размеры конкретных растений уточняйте перед заказом.</p><nav class="seo-links"><a href="/collections">Все подборки →</a><a href="/guides">Краткие практические памятки →</a></nav></aside>'
+    schema={'@type':'Blog','@id':DOMAIN+'/blog#blog','name':'Блог о растениях и саде','url':DOMAIN+'/blog','inLanguage':'ru-RU','blogPost':[{'@type':'BlogPosting','headline':a['title'],'url':DOMAIN+'/blog/'+a['slug']} for a in ARTICLES]}
+    return shell('Блог о растениях: выбор саженцев, сравнение сортов и уход — Зелёный дворик','Как выбрать растения для сада: сорта плодовых и ягодных, хвойные, гортензии, почва, опыление и уход. Практические статьи со ссылками на каталог.','/blog',content,[schema,bcs])
+
+
+def blog_page(a, products):
+    path='/blog/'+a['slug']
+    title, lead=a['title'],a['lead']
+    bc,bcs=breadcrumbs([('Главная','/'),('Блог о растениях','/blog'),(title,None)])
+    selections=[COLLECTION_BY_SLUG[s] for s in a['collections']]
+    candidates=[p for c in selections for p in members(c,products)]
+    cover=candidates[0] if candidates else None
+    image=(cover.get('seo_image') or cover.get('local_image')) if cover else '/img/services-planting.webp'
+    toc='<nav class="seo-toc" aria-label="Содержание статьи"><h2>В этой статье</h2><ol>'+''.join(f'<li><a href="#section-{i}">{E(h)}</a></li>' for i,(h,_) in enumerate(a['sections'],1))+'</ol><a href="#catalog-selection">Сравнение предложений →</a></nav>'
+    sections=''.join(f'<section id="section-{i}"><h2>{E(h)}</h2><p>{E(text)}</p></section>' for i,(h,text) in enumerate(a['sections'],1))
+    checklist='<aside class="seo-callout"><h2>Список перед заказом</h2><ul>'+''.join(f'<li>{E(item)}</li>' for item in a['checklist'])+'</ul></aside>'
+    sources=''
+    if a['sources']:
+        sources='<section class="seo-sources"><h2>Источники по выращиванию</h2><p>Общие принципы сверены с руководствами RHS. Сроки работ из британского календаря не переносятся на Подмосковье буквально; условия участка и рекомендации по конкретному сорту проверяются отдельно.</p><ul>'+''.join(f'<li><a href="{E(SOURCES[s][1])}">{E(SOURCES[s][0])}</a></li>' for s in a['sources'])+'</ul></section>'
+    comparisons=''
+    for c in selections:
+        items=sorted(members(c,products), key=lambda p:clean(p['name']).casefold())
+        focus=ARTICLE_FOCUS.get(a['slug'])
+        if focus:
+            items=[p for p in items if p['slug'] in focus]
+        keys=['Высота растения','Диаметр кроны','Созревание','Вкус'] if a['slug']=='golubika-blyukrop-dyuk-patriot' else None
+        comparisons+=f'<section><h3><a href="/collections/{c[0]}">{E(c[3])} →</a></h3>'+comparison_table(items,c[1],c[3],expanded=bool(focus),keys=keys)+ '</section>'
+    related=sorted([other for other in ARTICLES if other['slug']!=a['slug']],key=lambda other: (bool(set(other['collections']) & set(a['collections'])),other['category']==a['category']),reverse=True)[:3]
+    content=f'''{bc}<article><header class="seo-article-heading"><div><p class="section__eyebrow">{E(a['category'])}</p><h1>{E(title)}</h1><p class="seo-lead">{E(lead)}</p><p class="seo-muted">Материал «Зелёного дворика» · <time datetime="{a['published']}">15 октября 2026</time></p></div><div class="seo-article-cover">{image_html(cover,hero=True) if cover else ''}<p class="seo-muted">Фото растения из каталога. Вид конкретного экземпляра уточняйте перед заказом.</p></div></header><div class="seo-article-layout"><div class="seo-prose">{sections}{checklist}{sources}</div>{toc}</div><section class="seo-section seo-article-selection" id="catalog-selection"><h2>Предложения каталога по теме</h2><p>Сведения о сортах и ценах берутся из карточек. Сравнение не является испытанием растений в одинаковых условиях. Наличие и параметры материала подтверждаются при заказе.</p>{comparisons}</section></article>{buying_block()}<section class="seo-section"><h2>Читайте также</h2><div class="seo-topic-grid">{''.join(blog_card(other) for other in related)}</div></section>'''
+    schema={'@type':'BlogPosting','@id':DOMAIN+path+'#article','headline':title,'description':lead,'url':DOMAIN+path,'mainEntityOfPage':DOMAIN+path,'datePublished':a['published']+'T09:00:00+03:00','articleSection':a['category'],'inLanguage':'ru-RU','author':{'@type':'Organization','name':'Зелёный дворик','url':DOMAIN+'/contacts'},'publisher':{'@type':'Organization','name':'Зелёный дворик','url':DOMAIN,'logo':{'@type':'ImageObject','url':DOMAIN+'/img/logo.png'}},'image':[DOMAIN+image if image.startswith('/') else image],'isPartOf':{'@id':DOMAIN+'/blog#blog'},'citation':[SOURCES[s][1] for s in a['sources']]}
+    return shell(title+' — Зелёный дворик',lead,path,content,[schema,bcs],image,og_type='article')
 
 
 def guide_page(g):
@@ -297,7 +410,7 @@ def guide_page(g):
 def enhance_catalog(source, products):
     source=source.replace('</head>',f'<link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">\n</head>')
     source=source.replace('<title>Каталог растений — Зелёный дворик | Плодовые, ягодные, хвойные и декоративные растения</title>','<title>Каталог саженцев и крупномеров в Мытищах — Зелёный дворик</title>')
-    block='<nav class="seo-links seo-catalog-links" aria-label="Подборки и советы"><a href="/collections/golubika">Голубика</a><a href="/collections/irga">Ирга</a><a href="/collections/derevo-sad">Деревья-сад</a><a href="/collections/krupnomery">Крупномеры</a><a href="/guides">Советы по выбору</a><a href="/delivery">Доставка и самовывоз</a></nav>'
+    block='<nav class="seo-links seo-catalog-links" aria-label="Подборки и советы"><a href="/collections">Все подборки</a><a href="/collections/golubika">Голубика</a><a href="/collections/irga">Ирга</a><a href="/collections/derevo-sad">Деревья-сад</a><a href="/collections/krupnomery">Крупномеры</a><a href="/blog">Блог о растениях</a><a href="/guides">Практические памятки</a><a href="/delivery">Доставка и самовывоз</a></nav>'
     source=source.replace('        <div class="catalog__filters"',block+'\n        <div class="catalog__filters"',1)
     for c in COLLECTIONS:
         slug, group, subgroup, label = c[:4]
@@ -335,11 +448,14 @@ def enhance_existing():
 
 
 def write_site(products, stats):
-    for folder in ('collections','guides'): (ROOT/folder).mkdir(exist_ok=True)
+    for folder in ('collections','guides','blog'): (ROOT/folder).mkdir(exist_ok=True)
     for c in COLLECTIONS: (ROOT/'collections'/f'{c[0]}.html').write_text(collection_page(c,products))
     for g in GUIDES: (ROOT/'guides'/f'{g[0]}.html').write_text(guide_page(g))
+    (ROOT/'collections.html').write_text(collections_index(products))
+    (ROOT/'blog.html').write_text(blog_index())
+    for a in ARTICLES: (ROOT/'blog'/f'{a["slug"]}.html').write_text(blog_page(a,products))
     bc,bcs=breadcrumbs([('Главная','/'),('Советы по выбору',None)])
-    content=bc+'<h1>Советы по выбору растений</h1><p class="seo-lead">Памятки для подготовки заказа и участка: что уточнить до покупки и как сравнить предложения каталога.</p><div class="seo-guide-list">'+''.join(f'<article><h2><a href="/guides/{g[0]}">{E(g[1])}</a></h2><p>{E(g[2])}</p></article>' for g in GUIDES)+'</div><nav class="seo-links"><a href="/catalog">Перейти в каталог →</a><a href="/delivery">Доставка и самовывоз →</a></nav>'
+    content=bc+'<h1>Советы по выбору растений</h1><p class="seo-lead">Памятки для подготовки заказа и участка: что уточнить до покупки и как сравнить предложения каталога.</p><div class="seo-guide-list">'+''.join(f'<article><h2><a href="/guides/{g[0]}">{E(g[1])}</a></h2><p>{E(g[2])}</p></article>' for g in GUIDES)+'</div><nav class="seo-links"><a href="/blog">Больше статей о выборе и уходе →</a><a href="/catalog">Перейти в каталог →</a><a href="/delivery">Доставка и самовывоз →</a></nav>'
     (ROOT/'guides.html').write_text(shell('Как выбрать растения для сада — советы питомника','Памятки о выборе саженцев, грунте для голубики и доставке крупномеров. Вопросы перед покупкой растений в питомнике.','/guides',content,[bcs]))
     bc,bcs=breadcrumbs([('Главная','/'),('Доставка и самовывоз',None)])
     content=bc+'''<article class="seo-prose"><p class="section__eyebrow">Покупателям</p><h1>Доставка растений и самовывоз</h1><p class="seo-lead">Перед получением заказа согласуйте наличие, размер и стоимость растений. Доставку, разгрузку и посадку обсуждаем с учётом адреса и условий участка.</p><section><h2>Самовывоз в Мытищах</h2><p>Точка продаж: Кропоткинский проезд, Экспоцентр питомников «Дружба», место № 12. Часы работы — ежедневно с 9:00 до 18:00. Перед поездкой подтвердите наличие интересующих растений по телефону <a href="tel:+79258810190">+7 (925) 881-01-90</a>.</p><p><a href="/contacts">Адрес, телефоны и схема проезда →</a></p></section><section><h2>Что сообщить для расчёта доставки</h2><ul><li>Список растений, количество и выбранные размеры.</li><li>Адрес и желаемую дату получения.</li><li>Условия подъезда и место разгрузки.</li><li>Нужна ли посадка или только доставка.</li></ul><p>Фиксированного тарифа на этой странице нет: стоимость зависит от заказа и маршрута. Итоговую сумму согласуйте до подтверждения заказа.</p></section><section><h2>Крупномеры и посадка</h2><p>Для больших растений заранее уточняют размеры кома, проезд техники и способ перемещения по участку. Цена растения в каталоге не включает посадочные работы.</p><p><a href="/guides/dostavka-i-posadka-krupnomerov">Как подготовить участок к доставке крупномера →</a></p></section><section><h2>Подтверждение и оплата</h2><p>Заявка из каталога передаёт список выбранных растений. Наличие, параметры, окончательную стоимость и способ оплаты согласуйте с менеджером перед оплатой. Условия продажи приведены в <a href="/offer">публичной оферте</a>.</p></section></article><nav class="seo-links"><a href="/catalog">Выбрать растения →</a><a href="/services">Посадка и другие услуги →</a></nav>'''
@@ -348,14 +464,14 @@ def write_site(products, stats):
     ns='http://www.sitemaps.org/schemas/sitemap/0.9'; ins='http://www.google.com/schemas/sitemap-image/1.1'
     ET.register_namespace('',ns); ET.register_namespace('image',ins)
     sitemap=ET.Element('{'+ns+'}urlset')
-    paths=['/','/catalog','/services','/additional-services','/contacts','/delivery','/guides']+['/collections/'+c[0] for c in COLLECTIONS]+['/guides/'+g[0] for g in GUIDES]
+    paths=['/','/catalog','/collections','/blog','/services','/additional-services','/contacts','/delivery','/guides']+['/collections/'+c[0] for c in COLLECTIONS if members(c,products)]+['/guides/'+g[0] for g in GUIDES]+['/blog/'+a['slug'] for a in ARTICLES]
     images={ '/catalog/'+p['slug']:p.get('seo_image') for p in products}
     for path in paths+list(images):
         node=ET.SubElement(sitemap,'{'+ns+'}url'); ET.SubElement(node,'{'+ns+'}loc').text=DOMAIN+path
         if images.get(path): ET.SubElement(ET.SubElement(node,'{'+ins+'}image'),'{'+ins+'}loc').text=DOMAIN+images[path]
     ET.indent(sitemap)
     ET.ElementTree(sitemap).write(ROOT/'sitemap.xml',encoding='utf-8',xml_declaration=True)
-    (ROOT/'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /backend/\nDisallow: /tools/\nDisallow: /deploy/\nDisallow: /.\n\nSitemap: {DOMAIN}/sitemap.xml\n')
+    (ROOT/'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /backend/\nDisallow: /tools/\nDisallow: /deploy/\nDisallow: /.\n\nSitemap: {DOMAIN}/sitemap.xml\n')
     # Migration material for the OLD host, never activated on the new site.
     with (ROOT/'tools'/'seo-redirect-map.csv').open('w',newline='') as fp:
         writer=csv.writer(fp); writer.writerow(['old_url','new_url'])
@@ -363,6 +479,6 @@ def write_site(products, stats):
     redirects=['# Include inside the OLD domain server block only. Review before deployment.']
     redirects += [f'location = {urlsplit(p["source_url"]).path} {{ return 301 {DOMAIN}/catalog/{p["slug"]}$is_args$args; }}' for p in products]
     (ROOT/'deploy'/'nginx'/'legacy-product-redirects.conf.example').write_text('\n'.join(redirects)+'\n')
-    report={'products':len(products),'collections':len(COLLECTIONS),'guides':len(GUIDES),'sitemap_urls':len(paths)+len(images),'images':stats,'missing_prices':[p['slug'] for p in products if not p.get('price')],'unknown_stock':[p['slug'] for p in products if not p.get('availability')], 'price_ranges':[p['slug'] for p in products if p.get('high_price') and p.get('price') and p['high_price']>p['price']]}
+    report={'products':len(products),'collections':len(COLLECTIONS),'guides':len(GUIDES),'blog_articles':len(ARTICLES),'sitemap_urls':len(paths)+len(images),'images':stats,'missing_prices':[p['slug'] for p in products if not p.get('price')],'unknown_stock':[p['slug'] for p in products if not p.get('availability')], 'price_ranges':[p['slug'] for p in products if p.get('high_price') and p.get('price') and p['high_price']>p['price']]}
     (ROOT/'tools'/'seo-build-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     return report

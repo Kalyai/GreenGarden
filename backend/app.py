@@ -360,6 +360,7 @@ class Handler(SimpleHTTPRequestHandler):
              "/catalog": "/catalog.html", "/services": "/services.html",
              "/additional-services": "/additional-services.html",
              "/contacts": "/contacts.html", "/guides": "/guides.html",
+             "/blog": "/blog.html", "/collections": "/collections.html",
              "/delivery": "/delivery.html"}
 
     def __init__(self, *args, **kwargs):
@@ -423,7 +424,7 @@ class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         clean = path.split("?", 1)[0].split("#", 1)[0]
         mapped = self.PAGES.get(clean, path)
-        if re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+", clean):
+        if re.fullmatch(r"/(?:catalog|collections|guides|blog)/[a-z0-9-]+", clean):
             mapped = clean + ".html"
         candidate = super().translate_path(mapped)
         if not self._is_servable(candidate):
@@ -549,7 +550,7 @@ class Handler(SimpleHTTPRequestHandler):
                     while chunk := image.read(64 * 1024):
                         self.wfile.write(chunk)
             return True
-        if path == "/catalog" or re.fullmatch(r"/(?:catalog|collections)/[a-z0-9-]+", path):
+        if path in ("/catalog", "/collections", "/blog") or re.fullmatch(r"/(?:catalog|collections|blog)/[a-z0-9-]+", path):
             page = CATALOG.public_html(path)
             if page is None:
                 self.send_error(404)
@@ -573,13 +574,14 @@ class Handler(SimpleHTTPRequestHandler):
                    "/additional-services.html": "/additional-services",
                    "/contacts.html": "/contacts",
                    "/delivery.html": "/delivery", "/guides.html": "/guides",
+                   "/blog.html": "/blog", "/collections.html": "/collections",
                    "/catalog/": "/catalog"}
         target = targets.get(path)
-        if target is None and re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+\.html", path):
+        if target is None and re.fullmatch(r"/(?:catalog|collections|guides|blog)/[a-z0-9-]+\.html", path):
             target = path[:-5]
         if target is None and path.endswith("/") and path[:-1] in self.PAGES:
             target = path[:-1]
-        if target is None and re.fullmatch(r"/(?:catalog|collections|guides)/[a-z0-9-]+/", path):
+        if target is None and re.fullmatch(r"/(?:catalog|collections|guides|blog)/[a-z0-9-]+/", path):
             candidate = os.path.join(ROOT, path.strip("/") + ".html")
             if os.path.isfile(candidate):
                 target = path[:-1]
