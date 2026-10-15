@@ -66,7 +66,7 @@ COPY --from=static /static /app/
 COPY backend/app.py backend/admin.py backend/catalog_store.py backend/max_bot.py backend/max_setup.py backend/backup_data.py /app/backend/
 COPY backend/certs/ /app/backend/certs/
 COPY legacy-catalog.json /app/legacy-catalog.json
-COPY tools/catalog_taxonomy.py tools/seo_content.py tools/seo_site.py tools/garden_content.py tools/render_legacy_catalog.py /app/tools/
+COPY tools/catalog_taxonomy.py tools/seo_content.py tools/seo_site.py tools/garden_content.py tools/buyer_help.py tools/render_legacy_catalog.py /app/tools/
 
 # Процесс слушает 0.0.0.0 только внутри своей сети контейнера: порт 8000
 # не публикуется на хост (см. docker-compose.yml), снаружи его не достать.

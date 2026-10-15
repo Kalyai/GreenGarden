@@ -13,11 +13,12 @@ from urllib.parse import urlsplit
 from catalog_taxonomy import classify, GROUP_LABELS, is_large_specimen
 from seo_content import COLLECTIONS, GUIDES
 from garden_content import ARTICLES, SOURCES, ARTICLE_FOCUS
+from buyer_help import BUYER_TOPICS, CULTURE_QUESTIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN = 'https://green-courtyard.space'
 E = html.escape
-CSS_VERSION = '4'
+CSS_VERSION = '5'
 ARTICLE_BY_SLUG = {a['slug']: a for a in ARTICLES}
 COLLECTION_BY_SLUG = {c[0]: c for c in COLLECTIONS}
 GROUP_COLLECTION = {c[1]: c for c in COLLECTIONS if c[1] and c[2] is None}
@@ -201,7 +202,7 @@ def shell(title, meta, path, content, nodes=None, image='/img/services-planting.
 <body class="seo-page"><a class="seo-skip" href="#content">Перейти к содержанию</a>
 <header class="header"><div class="container header__inner"><a class="logo" href="/" title="На главную"><img class="logo__img" src="/img/performance/logo-84.webp" alt="" width="42" height="42"><span class="logo__text">Зелёный дворик<small>питомник растений</small></span></a><nav class="seo-nav" aria-label="Основная навигация"><a href="/catalog">Каталог</a><a href="/collections">Подборки</a><a href="/blog">Блог</a><a href="/services">Услуги</a><a href="/contacts">Контакты</a></nav><a class="seo-phone" href="tel:+79258810190">+7 (925) 881-01-90</a></div></header>
 <main id="content" class="container seo-main">{content}</main>
-<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/collections">Все подборки растений</a><a href="/blog">Блог о растениях</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Практические памятки</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
+<footer class="footer"><div class="container seo-footer"><div><a href="/">Зелёный дворик</a><p>Точка продаж: Мытищи, Кропоткинский проезд,<br>Экспоцентр питомников «Дружба», место № 12.</p><a href="tel:+79258810190">+7 (925) 881-01-90</a></div><nav aria-label="Информация для покупателей"><a href="/catalog">Каталог</a><a href="/collections">Все подборки растений</a><a href="/blog">Блог о растениях</a><a href="/delivery">Доставка и самовывоз</a><a href="/guides">Практические памятки</a><a href="/faq">Вопросы и ответы</a><a href="/services">Посадка и уход</a><a href="/contacts">Контакты и проезд</a><a href="/offer">Публичная оферта</a><a href="/privacy-policy">Конфиденциальность</a></nav></div></footer>
 {'<script src="/js/product.min.js?v=2"></script>' if script else ''}</body></html>'''
 
 
@@ -214,7 +215,7 @@ def selection_link(c):
 
 
 def faq_html(items):
-    return '<section class="seo-section"><h2>Вопросы перед покупкой</h2><div class="seo-faq">'+''.join(f'<details><summary>{E(q)}</summary><p>{E(a)}</p></details>' for q,a in items)+'</div></section>'
+    return '<section class="seo-section"><h2>Вопросы перед покупкой</h2><div class="seo-faq">'+''.join(f'<details><summary>{E(q)}</summary><p>{E(a)}</p></details>' for q,a in items)+'</div><p class="seo-muted"><a href="/faq">Все ответы о выборе, заказе и получении растений →</a></p></section>'
 
 
 def buying_block():
@@ -258,7 +259,49 @@ def product_questions(p):
             questions.append((question, f'В характеристиках предложения указано: {data[key].rstrip(".")}. '+('Совместимость с растениями вашего сада уточните по названиям сортов.' if key=='Опыление' else 'Фактические сроки зависят от погоды и условий участка.')))
     if 'Высота растения' in data:
         questions.append(('Какая высота у растения и у продаваемого саженца?', f'В описании указана высота растения: {data["Высота растения"]}. Это не обязательно размер экземпляра в продаже. Фактическую высоту, возраст и корневую систему подтвердите по артикулу.'))
+    light, soil = data.get('Отношение к свету'), data.get('Тип почвы')
+    if light or soil:
+        conditions = ' '.join(f'{label}: {value.rstrip(".")}.' for label,value in [('Освещение',light),('Почва',soil)] if value)
+        questions.append(('Где посадить растение: какое освещение и грунт нужны?', f'В карточке указано: {conditions} Сопоставьте эти условия с местом посадки. Если характеристики неполные или противоречат описанию, уточните их по сорту до заказа.'))
+    if classify(p)[0] in ('fruit','berry','vine'):
+        fruit = [(key,data[key]) for key in ('Вкус','Размер плода','Масса плода, гр') if data.get(key)]
+        if fruit:
+            questions.append(('Какие у растения плоды: вкус и размер?', 'По данным карточки: '+'; '.join(f'{key.lower()}: {value}' for key,value in fruit)+'. Эти сведения характеризуют сорт, а не обещают одинаковый урожай на любом участке.'))
+    questions += CULTURE_QUESTIONS.get(classify(p)[1], [])
+    if not p.get('availability'):
+        questions.append(('Есть ли это растение в наличии сейчас?', 'В карточке нет подтверждённого остатка. Уточните наличие и количество по артикулу перед поездкой или оплатой; отсутствие статуса не означает ни гарантированное наличие, ни отсутствие.'))
     return questions
+
+
+def buyer_faq_page():
+    bc,bcs=breadcrumbs([('Главная','/'),('Вопросы и ответы',None)])
+    links='<nav class="seo-links" aria-label="Темы вопросов">'+''.join(f'<a href="#{anchor}">{E(title)}</a>' for anchor,title,_ in BUYER_TOPICS)+'</nav>'
+    sections=[]
+    for anchor,title,items in BUYER_TOPICS:
+        entries=''.join(f'<details><summary>{E(q)}</summary><p>{E(answer)}</p><nav class="seo-links" aria-label="Подробнее по вопросу">'+''.join(f'<a href="{E(url)}">{E(label)} →</a>' for url,label in related)+'</nav></details>' for q,answer,related in items)
+        sections.append(f'<section id="{anchor}" class="seo-section"><h2>{E(title)}</h2><div class="seo-faq">{entries}</div></section>')
+    content=f'{bc}<p class="section__eyebrow">Помощь покупателю</p><h1>Вопросы о покупке саженцев и растений</h1><p class="seo-lead">Как сравнить цены и размеры, уточнить наличие, заказать доставку и подготовить участок. Ответы о свойствах конкретного сорта находятся также в его карточке.</p>{links}'+''.join(sections)+buying_block()
+    # A real help page, not a promise of a Google FAQ rich result.
+    node={'@type':'WebPage','name':'Вопросы о покупке саженцев и растений','url':DOMAIN+'/faq','description':'Ответы о выборе, стоимости, наличии, размерах, доставке и уходе за растениями.','inLanguage':'ru-RU'}
+    return shell('Вопросы и ответы: покупка саженцев, цены и доставка — Зелёный дворик','Как купить саженцы недорого, выбрать размер, проверить наличие и заказать доставку. Ответы на вопросы о покупке растений и подготовке участка.','/faq',content,[node,bcs])
+
+
+def collection_budget(c, items):
+    """Comparable prices within this collection, not a claim about the market."""
+    priced=sorted((p for p in items if p.get('price') and not p.get('availability','').endswith('OutOfStock')),key=lambda p:(float(p['price']),clean(p['name']).casefold()))
+    if not priced:
+        return ''
+    options=''.join(f'<li><a href="/catalog/{E(p["slug"])}">{E(clean(p["name"]))}</a> — {E(price(p))}. <span>{E(stock(p))}</span></li>' for p in priced[:3])
+    return '<section class="seo-section seo-budget"><h2>Выбор по цене</h2><p>Предложения с наименьшей указанной ценой в этой подборке. Размеры и комплектация могут различаться; наличие и цену конкретного экземпляра подтвердите перед заказом.</p><ul>'+options+'</ul><p class="seo-muted"><a href="/faq#choice">Как выбрать недорогие саженцы и сравнить предложения →</a></p></section>'
+
+
+def collection_price_question(c, items):
+    culture={'vishni':'вишни','chereshni':'черешни','yabloni':'яблони','grushi':'груши','slivy':'сливы','abrikosy':'абрикоса','golubika':'голубики','zhimolost':'жимолости','malina':'малины','smorodina':'смородины','kryzhovnik':'крыжовника','gortenzii':'гортензии','tui':'туи','eli':'ели','rododendrony':'рододендрона'}.get(c[0])
+    if not culture:
+        return []
+    priced=[p for p in items if p.get('price') and not p.get('availability','').endswith('OutOfStock')]
+    start=f'В этой подборке указаны цены от {price(min(priced,key=lambda p:float(p["price"]))).split("–")[0].rstrip(" ₽")} ₽. ' if priced else ''
+    return [(f'Как купить саженцы {culture} недорого?', start+'Выберите подходящие размеры и сравните предложения одинакового возраста, формы и корневой системы. Минимальная цена не подтверждает наличие нужного размера. Доставку и посадку учитывайте отдельно; итоговую стоимость подтвердите при заказе.')]
 
 
 def product_page(p, products):
@@ -328,12 +371,12 @@ def collection_page(c, products):
     links = '<nav class="seo-links" aria-label="Подборки растений">'+''.join(selection_link(x) for x in children)+'</nav>' if children else ''
     guide = 'golubika-pochva-i-posadka' if slug=='golubika' else 'dostavka-i-posadka-krupnomerov' if slug=='krupnomery' else 'kak-vybrat-sazhenets'
     guide_title = next(g[1] for g in GUIDES if g[0]==guide)
-    content = f'''{bc}<section class="seo-heading"><p class="section__eyebrow">Питомник · точка продаж в Мытищах</p><h1>{E(heading)}</h1><p class="seo-lead">{E(intro)}</p>{links}<p class="seo-muted">В подборке: {len(items)}. Цены и наличие подтверждаем при заказе.</p></section><section aria-label="Растения в подборке" class="seo-grid"><h2 class="seo-sr-only">Растения в подборке</h2>{''.join(tile(p) for p in items)}</section><section class="seo-section seo-prose"><h2>На что обратить внимание при выборе</h2><p>{E(advice)}</p><p><a href="/guides/{guide}">{E(guide_title)} →</a></p>{'<p class="seo-muted">О требованиях к грунту: <a href="https://www.rhs.org.uk/fruit/blueberries/grow-your-own">рекомендации RHS по выращиванию голубики</a>.</p>' if slug=='golubika' else ''}</section>{faq_html([(question,answer),('Где посмотреть растения и уточнить цену?', 'Точка продаж находится в Мытищах, в Экспоцентре питомников «Дружба», место № 12. Перед визитом свяжитесь с нами, чтобы уточнить наличие выбранных позиций и размер посадочного материала.')])}{buying_block()}'''
+    content = f'''{bc}<section class="seo-heading"><p class="section__eyebrow">Питомник · точка продаж в Мытищах</p><h1>{E(heading)}</h1><p class="seo-lead">{E(intro)}</p>{links}<p class="seo-muted">В подборке: {len(items)}. Цены и наличие подтверждаем при заказе.</p></section><section aria-label="Растения в подборке" class="seo-grid"><h2 class="seo-sr-only">Растения в подборке</h2>{''.join(tile(p) for p in items)}</section><section class="seo-section seo-prose"><h2>На что обратить внимание при выборе</h2><p>{E(advice)}</p><p><a href="/guides/{guide}">{E(guide_title)} →</a></p>{'<p class="seo-muted">О требованиях к грунту: <a href="https://www.rhs.org.uk/fruit/blueberries/grow-your-own">рекомендации RHS по выращиванию голубики</a>.</p>' if slug=='golubika' else ''}</section>{faq_html([(question,answer),*collection_price_question(c,items),('Где посмотреть растения и уточнить цену?', 'Точка продаж находится в Мытищах, в Экспоцентре питомников «Дружба», место № 12. Перед визитом свяжитесь с нами, чтобы уточнить наличие выбранных позиций и размер посадочного материала.')])}{buying_block()}'''
     schema={'@type':'CollectionPage','name':heading,'url':DOMAIN+path,'description':intro,'mainEntity':{'@type':'ItemList','numberOfItems':len(items),'itemListElement':[{'@type':'ListItem','position':i,'name':clean(p['name']),'url':DOMAIN+'/catalog/'+p['slug']} for i,p in enumerate(items,1)]}}
     meta=f'{heading} в питомнике «Зелёный дворик»: фото, цены и характеристики. Сравните растения, уточните наличие. Самовывоз в Мытищах, доставка по согласованию.'
     compare = comparison_table(items, group, heading+': сравнение предложений')
     content = content.replace('<section aria-label="Растения в подборке"', compare+'<section aria-label="Растения в подборке"', 1)
-    content += reading_links(articles_for(c))
+    content += collection_budget(c, items) + reading_links(articles_for(c))
     result = shell(f'{heading} — купить в Мытищах | Зелёный дворик',meta,path,content,[schema,bcs],(items[0].get('seo_image') or items[0].get('local_image') or '/img/logo.png') if items else '/img/logo.png')
     return result if items else result.replace('content="index,follow,max-image-preview:large"', 'content="noindex,follow"', 1)
 
@@ -410,7 +453,7 @@ def guide_page(g):
 def enhance_catalog(source, products):
     source=source.replace('</head>',f'<link rel="stylesheet" href="/css/seo.min.css?v={CSS_VERSION}">\n</head>')
     source=source.replace('<title>Каталог растений — Зелёный дворик | Плодовые, ягодные, хвойные и декоративные растения</title>','<title>Каталог саженцев и крупномеров в Мытищах — Зелёный дворик</title>')
-    block='<nav class="seo-links seo-catalog-links" aria-label="Подборки и советы"><a href="/collections">Все подборки</a><a href="/collections/golubika">Голубика</a><a href="/collections/irga">Ирга</a><a href="/collections/derevo-sad">Деревья-сад</a><a href="/collections/krupnomery">Крупномеры</a><a href="/blog">Блог о растениях</a><a href="/guides">Практические памятки</a><a href="/delivery">Доставка и самовывоз</a></nav>'
+    block='<nav class="seo-links seo-catalog-links" aria-label="Помощь с выбором и заказом"><a href="/collections">Подборки растений</a><a href="/blog">Блог и советы</a><a href="/faq">Вопросы и ответы</a><a href="/delivery">Получение заказа</a></nav>'
     source=source.replace('        <div class="catalog__filters"',block+'\n        <div class="catalog__filters"',1)
     for c in COLLECTIONS:
         slug, group, subgroup, label = c[:4]
@@ -453,6 +496,7 @@ def write_site(products, stats):
     for g in GUIDES: (ROOT/'guides'/f'{g[0]}.html').write_text(guide_page(g))
     (ROOT/'collections.html').write_text(collections_index(products))
     (ROOT/'blog.html').write_text(blog_index())
+    (ROOT/'faq.html').write_text(buyer_faq_page())
     for a in ARTICLES: (ROOT/'blog'/f'{a["slug"]}.html').write_text(blog_page(a,products))
     bc,bcs=breadcrumbs([('Главная','/'),('Советы по выбору',None)])
     content=bc+'<h1>Советы по выбору растений</h1><p class="seo-lead">Памятки для подготовки заказа и участка: что уточнить до покупки и как сравнить предложения каталога.</p><div class="seo-guide-list">'+''.join(f'<article><h2><a href="/guides/{g[0]}">{E(g[1])}</a></h2><p>{E(g[2])}</p></article>' for g in GUIDES)+'</div><nav class="seo-links"><a href="/blog">Больше статей о выборе и уходе →</a><a href="/catalog">Перейти в каталог →</a><a href="/delivery">Доставка и самовывоз →</a></nav>'
@@ -464,7 +508,7 @@ def write_site(products, stats):
     ns='http://www.sitemaps.org/schemas/sitemap/0.9'; ins='http://www.google.com/schemas/sitemap-image/1.1'
     ET.register_namespace('',ns); ET.register_namespace('image',ins)
     sitemap=ET.Element('{'+ns+'}urlset')
-    paths=['/','/catalog','/collections','/blog','/services','/additional-services','/contacts','/delivery','/guides']+['/collections/'+c[0] for c in COLLECTIONS if members(c,products)]+['/guides/'+g[0] for g in GUIDES]+['/blog/'+a['slug'] for a in ARTICLES]
+    paths=['/','/catalog','/collections','/blog','/faq','/services','/additional-services','/contacts','/delivery','/guides']+['/collections/'+c[0] for c in COLLECTIONS if members(c,products)]+['/guides/'+g[0] for g in GUIDES]+['/blog/'+a['slug'] for a in ARTICLES]
     images={ '/catalog/'+p['slug']:p.get('seo_image') for p in products}
     for path in paths+list(images):
         node=ET.SubElement(sitemap,'{'+ns+'}url'); ET.SubElement(node,'{'+ns+'}loc').text=DOMAIN+path

@@ -361,6 +361,7 @@ class Handler(SimpleHTTPRequestHandler):
              "/additional-services": "/additional-services.html",
              "/contacts": "/contacts.html", "/guides": "/guides.html",
              "/blog": "/blog.html", "/collections": "/collections.html",
+             "/faq": "/faq.html",
              "/delivery": "/delivery.html"}
 
     def __init__(self, *args, **kwargs):
@@ -575,6 +576,7 @@ class Handler(SimpleHTTPRequestHandler):
                    "/contacts.html": "/contacts",
                    "/delivery.html": "/delivery", "/guides.html": "/guides",
                    "/blog.html": "/blog", "/collections.html": "/collections",
+                   "/faq.html": "/faq",
                    "/catalog/": "/catalog"}
         target = targets.get(path)
         if target is None and re.fullmatch(r"/(?:catalog|collections|guides|blog)/[a-z0-9-]+\.html", path):

@@ -56,6 +56,43 @@ class GardenSEO(unittest.TestCase):
             with self.subTest(collection=c[0]):
                 self.assertTrue(seo_site.members(c,products))
 
+    def test_budget_excludes_unavailable_and_unknown_prices(self):
+        c=seo_site.COLLECTION_BY_SLUG['vishni']
+        items=[{'slug':'unavailable','name':'Вишня A','price':1,'availability':'https://schema.org/OutOfStock'},
+               {'slug':'available','name':'Вишня B','price':900,'availability':'https://schema.org/InStock'},
+               {'slug':'unknown-price','name':'Вишня C','price':None,'availability':''},
+               {'slug':'unknown-stock','name':'Вишня D','price':800,'availability':''}]
+        block=seo_site.collection_budget(c,items)
+        self.assertNotIn('/catalog/unavailable',block)
+        self.assertNotIn('/catalog/unknown-price',block)
+        self.assertIn('Наличие уточняется',block)
+        self.assertLess(block.index('/catalog/unknown-stock'),block.index('/catalog/available'))
+        answer=seo_site.collection_price_question(c,items)[0][1]
+        self.assertIn('от 800 ₽',answer)
+        self.assertNotIn('от 1 ₽',answer)
+
+    def test_product_questions_preserve_size_uncertainty(self):
+        with tempfile.TemporaryDirectory() as d:
+            store=CatalogStore(d)
+        vine=store.get('sazhency-aktinidii')
+        questions=seo_site.product_questions(vine)
+        self.assertTrue(any('большую актинидию' in q for q,a in questions))
+        self.assertTrue(any('800 см' in a and 'не обязательно' in a for q,a in questions))
+        spruce=store.get('el-kolyuchaya-super-blyu-sidling')
+        questions=seo_site.product_questions(spruce)
+        self.assertFalse(any('Какая высота' in q for q,a in questions))
+        self.assertTrue(any('красивую ель' in q for q,a in questions))
+
+    def test_catalog_help_and_general_faq(self):
+        rendered=seo_site.enhance_catalog('        <div class="catalog__filters"></div>',[])
+        self.assertIn('/faq',rendered)
+        self.assertNotIn('/collections/golubika',rendered)
+        self.assertNotIn('/collections/irga',rendered)
+        faq=seo_site.buyer_faq_page()
+        self.assertEqual(faq.count('<summary>'),23)
+        self.assertIn('id="delivery"',faq)
+        self.assertNotIn('"@type": "QAPage"',faq)
+
 
 if __name__=='__main__':
     unittest.main()

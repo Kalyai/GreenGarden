@@ -28,7 +28,7 @@ class Routes(unittest.TestCase):
         except HTTPError as e: return e
     def test_crawler_pages(self):
         for ua in ('Googlebot','YandexBot'):
-            for path in ('/robots.txt','/sitemap.xml','/collections/irga','/guides/golubika-pochva-i-posadka','/guides','/delivery','/catalog/golubika-blyukrop','/blog','/collections','/blog/golubika-blyukrop-dyuk-patriot','/collections/remontantnaya-malina','/favicon.ico','/img/favicon-96.png'):
+            for path in ('/robots.txt','/sitemap.xml','/collections/irga','/guides/golubika-pochva-i-posadka','/guides','/delivery','/faq','/catalog/golubika-blyukrop','/blog','/collections','/blog/golubika-blyukrop-dyuk-patriot','/collections/remontantnaya-malina','/favicon.ico','/img/favicon-96.png'):
                 with self.subTest(ua=ua,path=path),self.request(path,ua) as r: self.assertEqual(r.status,200)
     def test_redirects_preserve_query(self):
         for path,target in [('/catalog/','/catalog'),('/collections/irga.html','/collections/irga'),('/collections/irga/','/collections/irga'),('/guides.html','/guides'),('/guides/','/guides'),('/contacts/','/contacts'),('/guides/kak-vybrat-sazhenets.html','/guides/kak-vybrat-sazhenets'),('/blog.html','/blog'),('/blog/','/blog'),('/collections.html','/collections'),('/collections/','/collections'),('/blog/golubika-blyukrop-dyuk-patriot.html','/blog/golubika-blyukrop-dyuk-patriot'),('/blog/golubika-blyukrop-dyuk-patriot/','/blog/golubika-blyukrop-dyuk-patriot')]:
@@ -41,5 +41,11 @@ class Routes(unittest.TestCase):
         with self.request('/robots.txt') as r:
             self.assertIn('text/plain',r.headers['Content-Type'])
             content=r.read().decode(); self.assertIn('Sitemap: https://green-courtyard.space/sitemap.xml',content); self.assertNotIn('Disallow: /\n',content)
+
+    def test_faq_canonical_routes(self):
+        for path in ('/faq.html','/faq/'):
+            with self.subTest(path=path),self.request(path+'?utm_source=test',method='HEAD') as r:
+                self.assertEqual(r.status,301)
+                self.assertEqual(r.headers['Location'],'/faq?utm_source=test')
 
 if __name__=='__main__': unittest.main()

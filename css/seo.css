@@ -66,6 +66,12 @@
 .seo-page{color:#50584a}.seo-page .logo__text small{color:#626b5b}.seo-nav a{color:#50584a;display:inline-flex;align-items:center;min-height:24px}.seo-page .section__eyebrow{color:#85613e}.seo-page .product-specs td,.seo-page .seo-faq summary{color:#50584a}.seo-callout>p{color:#46513e}
 
 .seo-product__image>picture{display:block}
+.seo-catalog-links{padding:16px 20px;background:#eef1e7;border:1px solid var(--color-border);border-radius:12px;gap:12px 28px}
+.seo-catalog-links a{min-height:24px;display:inline-flex;align-items:center}
+.seo-budget{padding:28px;border:1px solid var(--color-border);border-radius:16px;background:#fff}
+.seo-budget>p{max-width:850px}.seo-budget ul{list-style:disc;padding-left:22px;margin-top:18px;line-height:1.8}
+.seo-budget li+li{margin-top:12px}.seo-budget li a{text-decoration:underline;color:var(--color-primary);text-underline-offset:3px}.seo-budget li span{font-size:13px}
+.seo-faq details>.seo-links{font-size:14px;margin-bottom:6px}
 
 /* Editorial hub and comparisons: all content remains usable without JavaScript. */
 .seo-topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px}
