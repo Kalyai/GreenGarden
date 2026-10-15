@@ -340,7 +340,13 @@ def product_page(p, products):
     content = f'''{bc}<article><p class="section__eyebrow">{E(GROUP_LABELS[classify(p)[0]])}</p><h1>{E(name)}</h1><div class="seo-product"><div class="seo-product__image">{image_html(p,hero=True)}<p class="seo-muted">Фото иллюстрирует растение. Размер и вид конкретного экземпляра уточните перед заказом.</p></div><div><p class="seo-price">{E(price(p))}</p><p class="seo-stock">{E(stock(p))}</p><p class="seo-muted">Артикул: {E(p.get('sku') or 'уточняется')}</p><p class="seo-product__intro">{E(intro)}</p><div class="seo-actions">{buy}<a class="btn btn--outline" href="tel:+79258810190">Задать вопрос</a></div><p class="seo-muted">Цены и наличие подтверждаем при заказе. Доставка и посадка рассчитываются отдельно.</p><noscript><p>Для заказа позвоните <a href="tel:+79258810190">+7 (925) 881-01-90</a>.</p></noscript></div></div><section class="seo-section"><h2>Характеристики {E(name)}</h2><p class="seo-muted">Размеры в описании характеризуют растение, а не обязательно продаваемый саженец. Уточните возраст, подвой, контейнер и фактическую высоту выбранного экземпляра.</p><table class="product-specs"><caption class="seo-sr-only">Характеристики растения</caption><tbody>{table}</tbody></table></section></article>{faq_html(product_questions(p)+[('Как заказать это растение?', order_answer),('Можно ли забрать растение самостоятельно?', 'Да, после согласования заказа можно приехать на точку продаж в Мытищах. Адрес и часы работы указаны на странице контактов.')])}{buying_block()}{related_html}<nav class="seo-links" aria-label="Полезные разделы">{collection_link}<a href="/guides/kak-vybrat-sazhenets">Как выбрать саженец →</a></nav>'''
     # Keep order actions and connect each cultivar to useful editorial material.
     content += reading_links(articles_for(collection))
-    return shell(f'{name} — купить в Мытищах | Зелёный дворик',meta,path,content,[schema,bc_schema],image,True)
+    # Product snippets require an actual offer or genuine reviews. A range
+    # without priced variants and "price on request" are not exact offers.
+    # Keep these pages indexable without advertising an incomplete rich result.
+    page_schema = schema if schema.get('offers') else {
+        '@type':'WebPage','@id':DOMAIN+path+'#webpage','name':name,
+        'description':intro,'url':DOMAIN+path}
+    return shell(f'{name} — купить в Мытищах | Зелёный дворик',meta,path,content,[page_schema,bc_schema],image,True)
 
 
 def members(c, products):

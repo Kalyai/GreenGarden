@@ -113,12 +113,12 @@ def main():
         slug=re.sub(r'[^a-z0-9]+','-',unquote(product['slug']).lower()).strip('-')
         product_nodes=[node for schema in pages['/catalog/'+slug].schemas
                        for node in schema.get('@graph',[schema]) if node.get('@type')=='Product']
-        if len(product_nodes)!=1:
-            errors.append(f'Missing Product schema: {slug}')
-        else:
+        low,high=product.get('price'),product.get('high_price')
+        exact=bool(low and product.get('currency')=='RUB' and not (high and float(high)>float(low)))
+        if len(product_nodes)!=(1 if exact else 0):
+            errors.append(f'Unexpected Product schema count: {slug}')
+        elif product_nodes:
             offer=product_nodes[0].get('offers')
-            low,high=product.get('price'),product.get('high_price')
-            exact=bool(low and product.get('currency')=='RUB' and not (high and float(high)>float(low)))
             if exact and (not offer or float(offer.get('price',0))!=float(low)):
                 errors.append(f'Wrong exact offer: {slug}')
             if not exact and offer:

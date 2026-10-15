@@ -1,5 +1,7 @@
 """Protect intent selection, escaping and live admin data in editorial pages."""
 import tempfile
+import json
+import re
 import unittest
 import sys
 from pathlib import Path
@@ -11,6 +13,26 @@ import seo_site
 
 
 class GardenSEO(unittest.TestCase):
+    def test_product_rich_results_follow_live_exact_price(self):
+        with tempfile.TemporaryDirectory() as d:
+            store=CatalogStore(d)
+            product=next(p for p in store.list() if p['slug']=='abrikos-krasnoschekiy')
+            path='/catalog/'+product['slug']
+            def nodes():
+                html=store.public_html(path)
+                return [node for raw in re.findall(r'<script type="application/ld\+json">(.*?)</script>',html,re.S)
+                        for node in json.loads(raw).get('@graph',[])]
+            for amount, high, expected in [(None,None,False),(100,200,False),(100,None,True)]:
+                store.save(product['slug'],{'sku':product['sku'],'price':amount,'high_price':high,
+                           'availability':'','stock_quantity':None})
+                products=[n for n in nodes() if n.get('@type')=='Product']
+                self.assertEqual(len(products),int(expected))
+                if expected:
+                    self.assertEqual(products[0]['offers']['price'],100)
+                    self.assertNotIn('availability',products[0]['offers'])
+                else:
+                    self.assertTrue(any(n.get('@type')=='WebPage' for n in nodes()))
+
     def test_exact_intent_filters_do_not_infer_traits(self):
         base={'slug':'test','name':'Яблоня тест','characteristics':{}}
         def selected(slug, traits):
