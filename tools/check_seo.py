@@ -58,9 +58,9 @@ def main():
         try: page=Page(file.read_text())
         except Exception as e: errors.append(f'Invalid markup/JSON-LD: {path} {e}'); continue
         pages[path]=page
+        if page.canon!=[url]: errors.append(f'{path}: bad canonical {page.canon}')
         if path=='/': continue  # Existing homepage intentionally outside SEO edit scope.
         if page.h1!=1: errors.append(f'{path}: {page.h1} H1 headings')
-        if page.canon!=[url]: errors.append(f'{path}: bad canonical {page.canon}')
         if len(page.meta)!=1 or not page.meta[0]: errors.append(f'{path}: missing/duplicate description')
         if not page.title: errors.append(f'{path}: missing title')
         for asset in page.assets:
